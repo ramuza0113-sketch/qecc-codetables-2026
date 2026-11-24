@@ -1,7 +1,10 @@
 # Sixteen Improved Bounds on Quantum Error-Correcting Codes (`CodeTables.de`)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24513985.svg)](https://doi.org/10.5281/zenodo.24513985)
+
 **Author**: Katsutoshi Hashimoto (Independent Researcher, Japan — `ramuza0113@gmail.com` · [ORCID: `0009-0009-8292-5085`](https://orcid.org/0009-0009-8292-5085))  
 **Date**: November 2026  
+**Zenodo DOI (`v1.0.0`)**: [`10.5281/zenodo.24513986`](https://doi.org/10.5281/zenodo.24513986) (Concept DOI: [`10.5281/zenodo.24513985`](https://doi.org/10.5281/zenodo.24513985))  
 **Paper**: [`paper/main.pdf`](paper/main.pdf) ([`paper/main.tex`](paper/main.tex))  
 **Magma Script**: [`magma/verify_all_10_codes.m`](magma/verify_all_10_codes.m)
 
