@@ -1,0 +1,215 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black,
+  pdftitle={Sixteen Improved Minimum-Distance Bounds for Quantum Error-Correcting Codes via Multi-Circulant and Bordered Hermitian Constructions},
+  pdfauthor={Katsutoshi Hashimoto}
+}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\title{\textbf{Sixteen Improved Minimum-Distance Bounds for Quantum Error-Correcting Codes via Multi-Circulant and Bordered Hermitian Constructions}}
+
+\author{Katsutoshi Hashimoto\\
+\small Independent Researcher, Japan\\
+\small ORCID: \href{https://orcid.org/0009-0009-8292-5085}{0009-0009-8292-5085} \quad $\cdot$ \quad \texttt{ramuza0113@gmail.com}}
+
+\date{November 25, 2026}
+
+\begin{document}
+\sloppy
+\maketitle
+
+\begin{abstract}
+Using a Meet-in-the-Middle norm-matching construction in the group algebra $\mathbb{F}_{q^2}[x]/(x^m - 1)$ combined with GPU-accelerated minimum-weight screening, we construct ten explicit Hermitian self-orthogonal $[n, m]_{q^2}$ linear codes whose Hermitian duals achieve minimum Hamming weight $d(C^{\perp_H}) \ge d_{\mathrm{new}}$. By the Hermitian stabilizer construction of Ashikhmin--Knill and Ketkar \emph{et al.}, these yield ten pure $q$-ary quantum error-correcting codes:
+$[[36, 26, 4]]_2$, $[[49, 33, 5]]_2$, $[[20, 10, 5]]_3$, $[[18, 6, 6]]_4$, $[[19, 7, 6]]_4$, $[[20, 10, 5]]_4$, $[[25, 15, 5]]_4$, $[[26, 16, 5]]_4$, $[[19, 7, 6]]_5$, and $[[21, 7, 7]]_7$.
+Together with trivial stabilizer extension and pure subcode propagation, these constructions strictly improve \textbf{sixteen} minimum-distance lower bounds in Grassl's online tables (\texttt{CodeTables.de}) across local dimensions $q \in \{2, 3, 4, 5, 7\}$, closing \textbf{five} previously open entries ($[[36, 26, 4]]_2$, $[[37, 26, 4]]_2$, $[[20, 10, 5]]_3$, $[[25, 15, 5]]_4$, and $[[26, 16, 5]]_4$) to exact optimality. Every code is specified completely in closed polynomial form and verified from first principles by standalone zero-symmetry verifiers in Rust, Python, and Magma.
+\end{abstract}
+
+\section{Introduction}
+
+Let $\mathbb{F}_q$ be the finite field with $q$ elements ($q$ a prime power). An $[[n, k, d]]_q$ quantum stabilizer code encodes $k$ logical $q$-ary qudits into $n$ physical qudits and corrects any error affecting at most $\lfloor (d-1)/2 \rfloor$ qudits (or detects up to $d-1$ errors)~\cite{Calderbank1998,Ashikhmin2001,Ketkar2006}. Determining the largest achievable minimum distance $d$ for given $(q, n, k)$ is a central problem in quantum coding theory; the current state of knowledge is maintained by Grassl in the reference database \texttt{CodeTables.de}~\cite{Grassl2007}.
+
+A foundational algebraic route to stabilizer codes is the \emph{Hermitian construction}~\cite{Ashikhmin2001,Ketkar2006}: let $\mathbb{F}_{q^2}$ carry the Frobenius involution $\overline{u} = u^q$, and equip $\mathbb{F}_{q^2}^n$ with the Hermitian inner product
+\[
+  \langle \mathbf{u}, \mathbf{v} \rangle_H = \sum_{j=0}^{n-1} u_j v_j^q \in \mathbb{F}_{q^2}.
+\]
+If $C \subseteq \mathbb{F}_{q^2}^n$ is an $\mathbb{F}_{q^2}$-linear $[n, m]_{q^2}$ code that is \emph{Hermitian self-orthogonal} ($C \subseteq C^{\perp_H}$), then there exists an $[[n, n - 2m, d]]_q$ stabilizer code with minimum distance $d = \min\{\mathrm{wt}(\mathbf{v}) : \mathbf{v} \in C^{\perp_H} \setminus C\}$; when $d(C^{\perp_H}) \ge d_{\mathrm{new}}$, the resulting quantum code is \emph{pure} of minimum distance at least $d_{\mathrm{new}}$~\cite[Corollary~19]{Ketkar2006}.
+
+In this note we combine systematic multi-circulant and bordered generator matrices over $\mathbb{F}_{q^2}$ with $O(1)$ hash-table norm matching in $\mathbb{F}_{q^2}[x]/(x^m - 1)$ and parallel forced-pivot distance screening on a consumer GPU (NVIDIA GeForce RTX 3090). This yields ten explicit pure quantum codes that improve sixteen entries in \texttt{CodeTables.de} across $q \in \{2, 3, 4, 5, 7\}$, establishing exact optimal minimum distances in five cases.
+
+\section{Algebraic Construction and Meet-in-the-Middle Search}
+
+Fix a block size $m \ge 3$ and let $R_m = \mathbb{F}_{q^2}[x]/(x^m - 1)$. With each polynomial $a(x) = \sum_{t=0}^{m-1} a_t x^t \in R_m$ we associate the $m \times m$ right-circulant matrix $M(a)$ whose $(r, c)$ entry ($0 \le r, c < m$) is $a_{(r - c) \bmod m}$ (column $0$ equals $(a_0, a_1, \dots, a_{m-1})^\top$). Define the conjugate-transpose involution on $R_m$ by
+\[
+  a^\dagger(x) = a_0^q + \sum_{t=1}^{m-1} a_{m-t}^q x^t.
+\]
+Then $M(a)^\dagger = \overline{M(a)}^\top = M(a^\dagger)$ and $M(a) M(b) = M(a b \bmod (x^m - 1))$.
+
+\begin{proposition}[Multi-Circulant and Bordered Hermitian Self-Orthogonality]\label{prop:hermitian}
+Let $\ell \ge 3$, let $a_1(x), \dots, a_{\ell-1}(x) \in R_m$, and let $\mathbf{1}_m = (1, \dots, 1)^\top \in \mathbb{F}_{q^2}^m$.
+\begin{enumerate}
+  \item \emph{(Unbordered, $n = \ell m$):} The $m \times \ell m$ matrix
+  \[
+    G = \bigl[\, I_m \;\big|\; M(a_1) \;\big|\; \cdots \;\big|\; M(a_{\ell-1}) \,\bigr]
+  \]
+  has rank $m$ over $\mathbb{F}_{q^2}$ and satisfies $G G^\dagger = \mathbf{0}$ if and only if
+  \begin{equation}\label{eq:unbordered}
+    \sum_{i=1}^{\ell-1} a_i(x)\, a_i^\dagger(x) \equiv -1 \pmod{x^m - 1}.
+  \end{equation}
+  \item \emph{(Bordered, $n = \ell m + 1$):} The $m \times (\ell m + 1)$ matrix
+  \[
+    G_{\mathrm{bord}} = \bigl[\, I_m \;\big|\; M(a_1) \;\big|\; \cdots \;\big|\; M(a_{\ell-1}) \;\big|\; \mathbf{1}_m \,\bigr]
+  \]
+  has rank $m$ over $\mathbb{F}_{q^2}$ and satisfies $G_{\mathrm{bord}} G_{\mathrm{bord}}^\dagger = \mathbf{0}$ if and only if
+  \begin{equation}\label{eq:bordered}
+    \sum_{i=1}^{\ell-1} a_i(x)\, a_i^\dagger(x) \equiv -1 - \sum_{t=0}^{m-1} x^t \pmod{x^m - 1}.
+  \end{equation}
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+Since $G$ begins with $I_m$, $\mathrm{rank}_{\mathbb{F}_{q^2}}(G) = m$ holds unconditionally. For~(1), $G G^\dagger = I_m + \sum_{i=1}^{\ell-1} M(a_i) M(a_i)^\dagger = M\bigl(1 + \sum_{i=1}^{\ell-1} a_i a_i^\dagger\bigr)$, which vanishes if and only if~\eqref{eq:unbordered} holds. For~(2), the border column contributes $\mathbf{1}_m \mathbf{1}_m^\dagger = J_m = M\bigl(\sum_{t=0}^{m-1} x^t\bigr)$ to $G_{\mathrm{bord}} G_{\mathrm{bord}}^\dagger$, yielding~\eqref{eq:bordered}.
+\end{proof}
+
+\paragraph{Subspace Collapse and $O(1)$ Meet-in-the-Middle Generation.}
+For every $a \in R_m$, the Hermitian norm $N(a) = a(x) a^\dagger(x) \bmod (x^m - 1)$ satisfies $N(a)^\dagger = N(a)$: its constant term lies in $\mathbb{F}_q$ and $N(a)_{m-t} = N(a)_t^q$ for $1 \le t < m$. Consequently, $N(a)$ takes values in an $\mathbb{F}_q$-subspace of cardinality only $q^m$ (rather than $q^{2m}$). Indexing a pool $\mathcal{P} \subseteq R_m$ of polynomials of weight at least $d_{\mathrm{new}} - 1$ by $N(a)$ in a hash table allows $(\ell - 1)$-tuples solving~\eqref{eq:unbordered} or~\eqref{eq:bordered} to be sampled in $O(1)$ expected operations per exact Hermitian self-orthogonal code.
+
+\paragraph{Forced-Pivot Minimum-Distance Screening.}
+Write $G = [I_m \mid B]$ with $B \in \mathbb{F}_{q^2}^{m \times (n - m)}$. Because Frobenius conjugation preserves Hamming weight, $d(C^{\perp_H}) \ge d_{\mathrm{new}}$ holds if and only if every nonzero vector $\mathbf{v} = (\mathbf{v}_0 \mid \mathbf{v}_B) \in \ker(G)$ satisfies $\mathrm{wt}(\mathbf{v}_B) + \mathrm{wt}(B \mathbf{v}_B) \ge d_{\mathrm{new}}$. Cyclic shift invariance across the $\ell - 1$ blocks (which fixes $\mathbf{1}_m$ when bordered) restricts the first active coordinate of $\mathbf{v}_B$ to at most $\ell$ anchor columns with projective coefficient $1$. Moreover, when testing whether a partial sum $\mathbf{u} \ne \mathbf{0}$ of $d_{\mathrm{new}} - 2$ columns of $B$ can be cancelled by one final column $\alpha \mathbf{b}_j$ ($\mathbf{u} + \alpha \mathbf{b}_j = \mathbf{0}$), any nonzero coordinate $u_{r_0} \ne 0$ uniquely forces $\alpha = -u_{r_0} b_{j, r_0}^{-1}$, eliminating inner scalar loops on GPU threads.
+
+\section{Summary of Improved Bounds and Explicit Defining Vectors}
+
+Table~\ref{tab:bounds} lists all sixteen entries of \texttt{CodeTables.de}~\cite{Grassl2007} improved by the ten explicit pure codes constructed in Proposition~\ref{prop:hermitian}, together with standard propagation rules~\cite[Theorem~6]{Calderbank1998}, \cite[Lemma~69--71]{Ketkar2006}:
+\begin{itemize}
+  \item \textbf{Extension ($\mathrm{Extend}$):} Any $[[n, k, d]]_q$ stabilizer code extends trivially to $[[n + s, k, \ge d]]_q$ ($s \ge 1$) by adjoining $s$ unentangled ancilla qudits stabilized by $Z_{n+1}, \dots, Z_{n+s}$.
+  \item \textbf{Pure Subcode ($\mathrm{PureSubcode}$):} Any \emph{pure} $[[n, k, d]]_q$ stabilizer code with $k \ge 1$ yields an $[[n, k - 1, \ge d]]_q$ stabilizer code by adjoining any non-stabilizer centralizer generator in $S^{\perp_s} \setminus S$ (whose centralizer shrinks, preserving minimum weight $\ge d$).
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Sixteen improved minimum-distance bounds for $[[n, k, d]]_q$ quantum codes compared with \texttt{CodeTables.de} (verified live November 25, 2026). Entries marked $\star$ achieve $d_{\mathrm{low}} = d_{\mathrm{up}}$ (exact optimal minimum distance).}\label{tab:bounds}
+\vspace{4pt}
+\small
+\begin{tabular}{@{}cccccl@{}}
+\toprule
+$q$ & Parameters $[[n, k]]_q$ & \texttt{CodeTables.de} & \textbf{New Bound} & Optimal & Construction / Derivation \\
+\midrule
+$2$ & $[[36, 26]]_2$ & $3\text{--}4$ & $\mathbf{4}$ & $\star$ & Direct Bordered ($m=5, \ell=7, +1$) \\
+$2$ & $[[37, 26]]_2$ & $3\text{--}4$ & $\mathbf{4}$ & $\star$ & $\mathrm{Extend}([[36, 26, 4]]_2, +1)$ \\
+$2$ & $[[49, 33]]_2$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & Direct Bordered ($m=8, \ell=6, +1$) \\
+\midrule
+$3$ & $[[20, 10]]_3$ & $4\text{--}5$ & $\mathbf{5}$ & $\star$ & Direct Unbordered ($m=5, \ell=4$) \\
+\midrule
+$4$ & $[[18, 6]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Unbordered ($m=6, \ell=3$) \\
+$4$ & $[[19, 6]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & $\mathrm{Extend}([[18, 6, 6]]_4, +1)$ \\
+$4$ & $[[19, 7]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Bordered ($m=6, \ell=3, +1$) \\
+$4$ & $[[20, 7]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & $\mathrm{Extend}([[19, 7, 6]]_4, +1)$ \\
+$4$ & $[[20, 10]]_4$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & Direct Unbordered ($m=5, \ell=4$) \\
+$4$ & $[[25, 14]]_4$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & $\mathrm{PureSubcode}([[25, 15, 5]]_4, -1)$ \\
+$4$ & $[[25, 15]]_4$ & $4\text{--}5$ & $\mathbf{5}$ & $\star$ & Direct Unbordered ($m=5, \ell=5$) \\
+$4$ & $[[26, 16]]_4$ & $4\text{--}5$ & $\mathbf{5}$ & $\star$ & Direct Bordered ($m=5, \ell=5, +1$) \\
+$4$ & $[[27, 16]]_4$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & $\mathrm{Extend}([[26, 16, 5]]_4, +1)$ \\
+\midrule
+$5$ & $[[19, 7]]_5$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Bordered ($m=6, \ell=3, +1$) \\
+\midrule
+$7$ & $[[21, 7]]_7$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Unbordered ($m=7, \ell=3$) \\
+$7$ & $[[22, 7]]_7$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & $\mathrm{Extend}([[21, 7, 7]]_7, +1)$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Field Encodings and Complete Defining Vectors}
+
+To make every construction self-contained on paper, we fix the integer encoding $u \in \{0, \dots, q^2 - 1\}$ of $\mathbb{F}_{q^2}$ for each $q \in \{2, 3, 4, 5, 7\}$:
+\begin{itemize}
+  \item $q = 2$: $\mathbb{F}_4 = \mathbb{F}_2[\omega]/(\omega^2 + \omega + 1)$, encoded as $u = c_0 + 2 c_1$ ($c_0, c_1 \in \{0, 1\}$).
+  \item $q \in \{3, 5\}$: $\mathbb{F}_{q^2} = \mathbb{F}_q[\theta]/(\theta^2 - 2)$, encoded as $u = x + q y$ ($x, y \in \{0, \dots, q-1\}$), so $\theta^q = -\theta$.
+  \item $q = 4$: $\mathbb{F}_{16} = \mathbb{F}_2[z]/(z^4 + z + 1)$, encoded in binary as $u = \sum_{j=0}^{3} c_j 2^j$ ($c_j \in \{0, 1\}$), with $\overline{u} = u^4$.
+  \item $q = 7$: $\mathbb{F}_{49} = \mathbb{F}_7[\theta]/(\theta^2 - 3)$, encoded as $u = x + 7 y$ ($x, y \in \{0, \dots, 6\}$), so $\theta^7 = -\theta$.
+\end{itemize}
+For prime $q \in \{2, 3, 5, 7\}$, the explicit $2m \times 2n$ $\mathbb{F}_q$-symplectic stabilizer matrix $[X \mid Z]$ is obtained directly by expanding each row $\mathbf{g}_i$ of $G$ into the two rows $\phi(\mathbf{g}_i)$ and $\phi(\eta \mathbf{g}_i)$ ($\eta = \omega$ for $q = 2$, $\eta = \theta$ for $q \in \{3, 5, 7\}$), where $\phi(x + \eta y) = (x \mid y)$.
+
+Below we give the exact first-column vectors $\mathbf{a}_i = (a_{i,0}, \dots, a_{i,m-1}) \in \mathbb{F}_{q^2}^m$ ($i = 1, \dots, \ell-1$) of each circulant block $M(a_i)$ in $G = [I_m \mid M(a_1) \mid \cdots \mid M(a_{\ell-1})]$ (or $G_{\mathrm{bord}}$ with trailing column $\mathbf{1}_m$):
+
+\begin{enumerate}
+  \item \textbf{$[[36, 26, 4]]_2$} ($G_{\mathrm{bord}}$, $m = 5, \ell = 7$, trailing $\mathbf{1}_5$):\\
+  $\mathbf{a}_1 = (2, 0, 0, 1, 2)$, $\mathbf{a}_2 = (2, 0, 1, 3, 3)$, $\mathbf{a}_3 = (3, 0, 3, 1, 3)$, $\mathbf{a}_4 = (0, 2, 1, 0, 1)$, $\mathbf{a}_5 = (2, 2, 1, 3, 1)$, $\mathbf{a}_6 = (1, 0, 2, 0, 1)$.
+
+  \item \textbf{$[[49, 33, 5]]_2$} ($G_{\mathrm{bord}}$, $m = 8, \ell = 6$, trailing $\mathbf{1}_8$):\\
+  $\mathbf{a}_1 = (3, 2, 1, 1, 3, 3, 3, 1)$, $\mathbf{a}_2 = (0, 3, 3, 1, 1, 0, 2, 0)$, $\mathbf{a}_3 = (1, 2, 0, 0, 1, 0, 1, 2)$,\\
+  $\mathbf{a}_4 = (2, 2, 3, 2, 0, 0, 1, 2)$, $\mathbf{a}_5 = (2, 1, 2, 2, 2, 2, 0, 0)$.
+
+  \item \textbf{$[[20, 10, 5]]_3$} ($G$, $m = 5, \ell = 4$, unbordered):\\
+  $\mathbf{a}_1 = (4, 7, 1, 4, 1)$, $\mathbf{a}_2 = (4, 4, 8, 2, 2)$, $\mathbf{a}_3 = (4, 8, 6, 4, 0)$.
+
+  \item \textbf{$[[18, 6, 6]]_4$} ($G$, $m = 6, \ell = 3$, unbordered):\\
+  $\mathbf{a}_1 = (11, 0, 11, 9, 4, 6)$, $\mathbf{a}_2 = (6, 6, 1, 6, 10, 8)$.
+
+  \item \textbf{$[[19, 7, 6]]_4$} ($G_{\mathrm{bord}}$, $m = 6, \ell = 3$, trailing $\mathbf{1}_6$):\\
+  $\mathbf{a}_1 = (1, 15, 8, 3, 5, 5)$, $\mathbf{a}_2 = (0, 14, 7, 2, 7, 11)$.
+
+  \item \textbf{$[[20, 10, 5]]_4$} ($G$, $m = 5, \ell = 4$, unbordered):\\
+  $\mathbf{a}_1 = (9, 4, 6, 11, 10)$, $\mathbf{a}_2 = (6, 13, 4, 0, 7)$, $\mathbf{a}_3 = (5, 10, 8, 9, 1)$.
+
+  \item \textbf{$[[25, 15, 5]]_4$} ($G$, $m = 5, \ell = 5$, unbordered):\\
+  $\mathbf{a}_1 = (1, 15, 11, 12, 13)$, $\mathbf{a}_2 = (11, 8, 15, 3, 9)$, $\mathbf{a}_3 = (9, 1, 3, 15, 2)$, $\mathbf{a}_4 = (13, 2, 5, 13, 10)$.
+
+  \item \textbf{$[[26, 16, 5]]_4$} ($G_{\mathrm{bord}}$, $m = 5, \ell = 5$, trailing $\mathbf{1}_5$):\\
+  $\mathbf{a}_1 = (6, 0, 14, 1, 13)$, $\mathbf{a}_2 = (3, 4, 14, 4, 8)$, $\mathbf{a}_3 = (7, 4, 3, 7, 8)$, $\mathbf{a}_4 = (13, 0, 1, 7, 3)$.
+
+  \item \textbf{$[[19, 7, 6]]_5$} ($G_{\mathrm{bord}}$, $m = 6, \ell = 3$, trailing $\mathbf{1}_6$):\\
+  $\mathbf{a}_1 = (9, 12, 12, 2, 4, 1)$, $\mathbf{a}_2 = (21, 6, 13, 23, 5, 22)$.
+
+  \item \textbf{$[[21, 7, 7]]_7$} ($G$, $m = 7, \ell = 3$, unbordered):\\
+  $\mathbf{a}_1 = (38, 27, 0, 22, 22, 2, 15)$, $\mathbf{a}_2 = (16, 37, 25, 24, 28, 9, 39)$.
+\end{enumerate}
+
+\section{Independent Clean-Room Verification and Data Availability}
+
+Every code was verified by two completely independent zero-shared-code programs without assuming cyclic or quasi-twisted symmetry:
+\begin{enumerate}
+  \item \textbf{Multi-threaded Rust Exhaustive Syndrome Verifier (\texttt{verify\_cleanroom.rs}):} Reads only the raw stabilizer / Hermitian matrix, verifies $\mathrm{rank}_{\mathbb{F}_q}([X \mid Z]) = n - k$ and $X Z^\top - Z X^\top \equiv \mathbf{0} \pmod q$ (or $\mathrm{rank}_{\mathbb{F}_{16}}(G) = m$ and $G G^\dagger = \mathbf{0}$), and exhaustively enumerates all $\sum_{w=1}^{d_{\mathrm{new}}-1} \binom{n}{w} (q+1)(q^2-1)^{w-1}$ projective operators across 20 CPU threads ($24.66$ billion operators verified for the first nine codes with zero degenerate or logical operators below weight $d_{\mathrm{new}}$).
+  \item \textbf{Projective Meet-in-the-Middle Verifier (\texttt{verify\_all\_qecc.py}) \& Magma Script (\texttt{magma/verify\_all\_10\_codes.m}):} Verifies SHA-256 digests, rank, Hermitian and symplectic self-orthogonality, and $d(C^{\perp_H}) \ge d_{\mathrm{new}}$ across all ten codes (including $[[21, 7, 7]]_7$) in $1.9$~seconds in Python, alongside a native Magma verification script calling \texttt{HermitianDual} and \texttt{QuantumCode}.
+\end{enumerate}
+
+All JSON certificates, SHA-256 checksums, Magma scripts, search solvers, and clean-room verifiers are publicly archived at \url{https://github.com/ramuza0113-sketch/qecc-codetables-2026}.
+
+\begin{thebibliography}{9}
+
+\bibitem{Ashikhmin2001}
+A.~Ashikhmin and E.~Knill,
+``Nonbinary quantum stabilizer codes,''
+\emph{IEEE Trans.\ Inf.\ Theory}, vol.~47, no.~7, pp.~3065--3072, Nov.\ 2001.
+
+\bibitem{Calderbank1998}
+A.~R.~Calderbank, E.~M.~Rains, P.~M.~Shor, and N.~J.~A.~Sloane,
+``Quantum error correction via codes over $\mathrm{GF}(4)$,''
+\emph{IEEE Trans.\ Inf.\ Theory}, vol.~44, no.~4, pp.~1369--1387, Jul.\ 1998.
+
+\bibitem{Grassl2007}
+M.~Grassl,
+``Bounds on the minimum distance of linear codes and quantum codes,''
+Online available at \url{http://www.codetables.de}, accessed Nov.\ 25, 2026.
+
+\bibitem{Ketkar2006}
+A.~Ketkar, A.~Klappenecker, S.~Kumar, and P.~K.~Sarvepalli,
+``Nonbinary stabilizer codes over finite fields,''
+\emph{IEEE Trans.\ Inf.\ Theory}, vol.~52, no.~11, pp.~4892--4914, Nov.\ 2006.
+
+\end{thebibliography}
+
+\end{document}
