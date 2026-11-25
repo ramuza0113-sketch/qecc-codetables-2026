@@ -1,9 +1,9 @@
 {
-  "title": "Sixteen Improved Bounds on Quantum Error-Correcting Codes via Quasi-Twisted and Bordered Hermitian Constructions",
-  "version": "1.0.0",
+  "title": "Twenty-Nine Improved Bounds on Quantum Error-Correcting Codes via Quasi-Twisted and Bordered Hermitian Constructions",
+  "version": "1.1.0",
   "upload_type": "publication",
   "publication_type": "preprint",
-  "description": "Explicit Hermitian self-orthogonal linear codes over GF(q^2) constructing ten pure quantum stabilizer codes ([[36, 26, 4]]_2, [[49, 33, 5]]_2, [[20, 10, 5]]_3, [[18, 6, 6]]_4, [[19, 7, 6]]_4, [[20, 10, 5]]_4, [[25, 15, 5]]_4, [[26, 16, 5]]_4, [[19, 7, 6]]_5, and [[21, 7, 7]]_7) that strictly improve 16 minimum-distance lower bounds (closing 5 entries to exact optimality) in Markus Grassl's CodeTables.de over alphabets q in {2, 3, 4, 5, 7}. Includes full manuscript (PDF/LaTeX), Magma verification script, JSON certificates with SHA-256 digests, RTX 3090 CUDA / Rust search solvers, and zero-shared-code clean-room verifiers.",
+  "description": "Explicit Hermitian self-orthogonal linear codes over GF(q^2) constructing eighteen pure quantum stabilizer codes ([[33, 11, 7]]_2, [[34, 12, 7]]_2, [[36, 26, 4]]_2, [[49, 33, 5]]_2, [[20, 10, 5]]_3, [[18, 6, 6]]_4, [[19, 7, 6]]_4, [[20, 10, 5]]_4, [[24, 8, 7]]_4, [[25, 9, 7]]_4, [[25, 15, 5]]_4, [[26, 16, 5]]_4, [[19, 7, 6]]_5, [[24, 12, 6]]_5, [[32, 16, 7]]_5, [[33, 17, 7]]_5, [[21, 7, 7]]_7, and [[22, 8, 7]]_7) that strictly improve 29 minimum-distance lower bounds (closing 5 entries to exact optimality) in Markus Grassl's CodeTables.de over alphabets q in {2, 3, 4, 5, 7}. Includes full manuscript (PDF/LaTeX), unified Magma verification script (verify_all_18_codes.m), JSON certificates with SHA-256 digests, RTX 3090 CUDA / Rust search solvers, and zero-shared-code clean-room verifiers.",
   "creators": [
     {
       "name": "Hashimoto, Katsutoshi",
@@ -17,6 +17,7 @@
     "stabilizer codes",
     "Hermitian self-orthogonal codes",
     "quasi-twisted codes",
+    "constacyclic codes",
     "CodeTables.de",
     "minimum distance bounds",
     "81P70",

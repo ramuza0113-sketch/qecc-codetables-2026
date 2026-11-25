@@ -1,4 +1,4 @@
-r"""Standalone Zero-Shared-Code Clean-Room Verifier for All 10 Quantum Codes (`certificates/QECC_*.json`).
+r"""Standalone Zero-Shared-Code Clean-Room Verifier for All 18 Quantum Codes (`certificates/QECC_*.json`).
 Independently verifies from first principles (zero symmetry assumptions!):
   1. SHA-256 digest of `G_hermitian_gf_q2`.
   2. Exact GF(q^2) RREF row rank `rank(G) == m = r / 2`.
@@ -6,7 +6,7 @@ Independently verifies from first principles (zero symmetry assumptions!):
   4. For prime q in {2, 3, 5, 7}: exact symplectic self-orthogonality `X * Z^T - Z * X^T == 0 (mod q)`
      and exact Ashikhmin-Knill bijection between `[X | Z]` and `G`.
   5. Exact zero-symmetry minimum distance `d(C^{\perp_H}) >= d_new` (pure!) via projective `3 + 3`
-     Meet-in-the-Middle over all column combinations of weight `1 .. d_new - 1` (~3.5s total for all 10 codes!).
+     Meet-in-the-Middle over all column combinations of weight `1 .. d_new - 1` (~3.5s total for all 18 codes!).
 """
 import glob
 import hashlib
@@ -145,7 +145,9 @@ def verify_certificate(path: str):
         for a in range(1, q2):
             col_sc[j, a - 1] = mul[G[:, j], a]
 
-    shifts = (np.arange(m, dtype=np.uint64) * 6)  # q2 <= 49 < 64 => 6 bits * m <= 48 bits in uint64!
+    bits_per = 2 if q == 2 else 6
+    assert bits_per * m <= 60
+    shifts = (np.arange(m, dtype=np.uint64) * bits_per)
 
     def norm_and_pack(vecs: np.ndarray) -> np.ndarray:
         # vecs: [M, m], assert all nonzero, normalize first nonzero entry to `1` via `mul[v, inv[lead]]`!
@@ -222,9 +224,9 @@ def verify_certificate(path: str):
 if __name__ == "__main__":
     base_dir = os.path.dirname(os.path.abspath(__file__))
     certs = sorted(glob.glob(os.path.join(base_dir, "certificates", "QECC_*.json")))
-    assert len(certs) == 10, f"Expected 10 certificates, found {len(certs)}"
+    assert len(certs) == 18, f"Expected 18 certificates, found {len(certs)}"
     t_all = time.time()
     print(f"=== Clean-Room Verification of {len(certs)} Explicit Quantum Codes ===", flush=True)
     for c in certs:
         verify_certificate(c)
-    print(f"\nALL {len(certs)} EXPLICIT QUANTUM CODES (IMPROVING 16 CODETABLES.DE ENTRIES) VERIFIED IN {time.time()-t_all:.2f}s!", flush=True)
+    print(f"\nALL {len(certs)} EXPLICIT QUANTUM CODES (IMPROVING 29 CODETABLES.DE ENTRIES) VERIFIED IN {time.time()-t_all:.2f}s!", flush=True)
