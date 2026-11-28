@@ -41,7 +41,9 @@
 \date{November 28, 2026 \quad (\texttt{v1.2.0})}
 
 \begin{document}
-\sloppy
+\emergencystretch=2.5em
+\clubpenalty=10000
+\widowpenalty=10000
 \maketitle
 
 \begin{abstract}
@@ -127,11 +129,11 @@ Theorem~\ref{thm:vandermonde_qt} unlocks the entire Exact-Optimal family $[[23,1
 To construct codes with odd stabilizer rank $r_S = n - k$ (as well as $\mathbb{F}_q$-linear Lagrangian codes not induced from $\mathbb{F}_{q^2}$), we work directly in $\mathbb{F}_q^{2n}$~\cite{Ketkar2006}.
 
 \begin{theorem}[Pure $\mathbb{F}_q$-Symplectic Rank Criterion]\label{thm:symplectic}
-Let $q = p^e$, let $1 \le r_S < n$, and let $X, Z \in \mathbb{F}_q^{r_S \times n}$ satisfy $\mathrm{rank}_{\mathbb{F}_q}([X \mid Z]) = r_S$ and $X Z^\top - Z X^\top = \vb{0}$ over $\mathbb{F}_q$. If for every subset $S \subseteq \{0, \dots, n - 1\}$ of cardinality $|S| = d - 1$ the $r_S \times 2(d - 1)$ submatrix $[X_{\cdot, S} \mid Z_{\cdot, S}]$ has full $\mathbb{F}_q$-column rank $2(d - 1)$ (in particular requiring $r_S \ge 2d - 2$, the Quantum Singleton Bound), then $[X \mid Z]$ defines a pure $[[n, n - r_S, \ge d]]_q$ quantum stabilizer code.
+Let $q = p^e$, let $1 \le r_S < n$, and let $X, Z \in \mathbb{F}_q^{r_S \times n}$ satisfy $\mathrm{rank}_{\mathbb{F}_q}\!\bigl([\,X \;\big|\; Z\,]\bigr) = r_S$ and $X Z^\top - Z X^\top = \vb{0}$ over $\mathbb{F}_q$. If for every subset $S \subseteq \{0, \dots, n - 1\}$ of cardinality $|S| = d - 1$ the $r_S \times 2(d - 1)$ submatrix $[\,X_{\cdot, S} \;\big|\; Z_{\cdot, S}\,]$ has full $\mathbb{F}_q$-column rank $2(d - 1)$ (in particular requiring $r_S \ge 2d - 2$, the Quantum Singleton Bound), then $[\,X \;\big|\; Z\,]$ defines a pure $[[n, n - r_S, \ge d]]_q$ quantum stabilizer code.
 \end{theorem}
 
 \begin{proof}
-Equip $\mathbb{F}_q$ with any $\mathbb{F}_p$-linear map $\mathrm{tr}: \mathbb{F}_q \to \mathbb{F}_p$ not identically zero (e.g.\ the field trace $\mathrm{Tr}_{\mathbb{F}_q/\mathbb{F}_p}$); then $(a, b) \mapsto \mathrm{tr}(ab)$ is a nondegenerate symmetric $\mathbb{F}_p$-bilinear form, and $\mathbb{F}_q$-linearity of $C_S = \mathrm{rowspace}_{\mathbb{F}_q}([X \mid Z])$ together with $X Z^\top - Z X^\top = \vb{0}$ implies trace-symplectic self-orthogonality $\mathrm{Tr}_{\mathbb{F}_q/\mathbb{F}_p}(\vb{x} \cdot \vb{z}'^\top - \vb{z} \cdot \vb{x}'^\top) = 0$ for all $(\vb{x}, \vb{z}), (\vb{x}', \vb{z}') \in C_S$~\cite[Lemma~16]{Ketkar2006}. A nonzero vector $(\vb{u}, \vb{v}) \in \mathbb{F}_q^{2n} \setminus \{\vb{0}\}$ supported on qudit subset $S$ with $|S| \le d - 1$ lies in $C_S^{\perp_s}$ iff $\sum_{c \in S} (u_c Z_{j,c} - v_c X_{j,c}) = 0$ for all $0 \le j < r_S$, which is a nontrivial $\mathbb{F}_q$-linear dependence among the $2|S|$ columns of $[X_{\cdot, S} \mid Z_{\cdot, S}]$. Full column rank $2(d - 1)$ on every $(d - 1)$-subset $S$ forbids all nonzero elements of $C_S^{\perp_s}$ of symplectic weight $\le d - 1$, establishing a pure $[[n, n - r_S, \ge d]]_q$ stabilizer code by~\cite[Corollary~19]{Ketkar2006}.
+Equip $\mathbb{F}_q$ with any $\mathbb{F}_p$-linear map $\mathrm{tr}: \mathbb{F}_q \to \mathbb{F}_p$ not identically zero (e.g.\ the field trace $\mathrm{Tr}_{\mathbb{F}_q/\mathbb{F}_p}$); then $(a, b) \mapsto \mathrm{tr}(ab)$ is a nondegenerate symmetric $\mathbb{F}_p$-bilinear form, and $\mathbb{F}_q$-linearity of $C_S = \mathrm{rowspace}_{\mathbb{F}_q}([X \mid Z])$ together with $X Z^\top - Z X^\top = \vb{0}$ implies trace-symplectic self-orthogonality $\mathrm{Tr}_{\mathbb{F}_q/\mathbb{F}_p}(\vb{x} \cdot \vb{z}'^\top - \vb{z} \cdot \vb{x}'^\top) = 0$ for all $(\vb{x}, \vb{z}), (\vb{x}', \vb{z}') \in C_S$~\cite[Lemma~16]{Ketkar2006}. A nonzero vector $(\vb{u}, \vb{v}) \in \mathbb{F}_q^{2n} \setminus \{\vb{0}\}$ supported on qudit subset $S$ with $|S| \le d - 1$ lies in $C_S^{\perp_s}$ iff $\sum_{c \in S} (u_c Z_{j,c} - v_c X_{j,c}) = 0$ for all $0 \le j < r_S$, which is a nontrivial $\mathbb{F}_q$-linear dependence among the $2|S|$ columns of $[\,X_{\cdot, S} \;\big|\; Z_{\cdot, S}\,]$. Full column rank $2(d - 1)$ on every $(d - 1)$-subset $S$ forbids all nonzero elements of $C_S^{\perp_s}$ of symplectic weight $\le d - 1$, establishing a pure $[[n, n - r_S, \ge d]]_q$ stabilizer code by~\cite[Corollary~19]{Ketkar2006}.
 \end{proof}
 
 Specializing $[X \mid Z]$ to $\ell$-quasi-cyclic and bordered Lagrangian block structures over $\mathbb{F}_q$ yields $31$ direct symplectic parent codes, including $20$ odd-$r_S$ codes such as the Exact-Optimal $[[21,14,4]]_4$ ($r_S = 7$, closing $3\text{--}4 \to 4$) and the high-distance record $[[46,11,13]]_8$ ($r_S = 35$, improving $12\text{--}18 \to 13\text{--}18$).
@@ -152,15 +154,15 @@ Let $\vb{u} \in \mathbb{F}_{q^2}^n \setminus \{\vb{0}\}$, let $\nu = \vb{u}^\dag
     \tau + \tau^q = \nu\, \tau^{q+1} \quad \text{in } \mathbb{F}_q.
   \end{equation}
   By Hilbert's Theorem~90 and surjectivity of trace and norm on $\mathbb{F}_{q^2}/\mathbb{F}_q$, equation~\eqref{eq:householder_cond} has exactly $q$ nonzero solutions $\tau \in \mathbb{F}_{q^2}^\times$ when $\nu \ne 0$ (anisotropic reflections, satisfying $\tau^{-1} + \tau^{-q} = \nu$) and $q - 1$ nonzero solutions ($\tau + \tau^q = 0$, isotropic unitary transvections) when $\nu = 0$.
-  \item For every $G \in \mathbb{F}_{q^2}^{m \times n}$ with $\mathrm{rank}(G) = m$ and $G G^\dagger = \vb{0}$, the $O(mn)$ rank-$1$ update $G' = G H(\vb{u}, \tau) = G - \tau (G\vb{u})\vb{u}^\dagger$ preserves $\mathrm{rank}(G') = m$ and $G'(G')^\dagger = \vb{0}$ identically, and by Witt's theorem~\cite{Dieudonne1963} the group generated by $\{H(\vb{u}, \tau)\}$ acts transitively on $\mathrm{IGr}_H(m, n; \mathbb{F}_{q^2})$.
+  \item For every $G \in \mathbb{F}_{q^2}^{m \times n}$ with $\mathrm{rank}(G) = m$ and $G G^\dagger = \vb{0}$, the $O(mn)$ rank-$1$ update $G' = G H(\vb{u}, \tau) = G - \tau (G\vb{u})\vb{u}^\dagger$ preserves $\mathrm{rank}(G') = m$ and $G'(G')^{\,\dagger} = \vb{0}$ identically, and by Witt's theorem~\cite{Dieudonne1963} the group generated by $\{H(\vb{u}, \tau)\}$ acts transitively on $\mathrm{IGr}_H(m, n; \mathbb{F}_{q^2})$.
 \end{enumerate}
 \end{theorem}
 
 \begin{proof}
-Expanding $H(\vb{u}, \tau) H(\vb{u}, \tau)^\dagger = (I_n - \tau \vb{u}\vb{u}^\dagger)(I_n - \tau^q \vb{u}\vb{u}^\dagger) = I_n - (\tau + \tau^q - \nu \tau^{q+1})\vb{u}\vb{u}^\dagger$ shows $H H^\dagger = I_n$ iff $\tau + \tau^q = \nu \tau^{q+1}$ because $\vb{u}\vb{u}^\dagger \ne \vb{0}$. Dividing by $\tau^{q+1} \ne 0$ when $\nu \ne 0$ gives $\mathrm{Tr}_{\mathbb{F}_{q^2}/\mathbb{F}_q}(\tau^{-1}) = \nu$, which has exactly $q$ solutions in $\mathbb{F}_{q^2}$ (none equal to $0$ since $\nu \ne 0$); when $\nu = 0$, $\mathrm{Tr}_{\mathbb{F}_{q^2}/\mathbb{F}_q}(\tau) = 0$ has $q - 1$ nonzero solutions. Unitarity gives $G'(G')^\dagger = G H H^\dagger G^\dagger = G G^\dagger = \vb{0}$ and $\mathrm{rank}(G') = \mathrm{rank}(G) = m$. By Witt's extension theorem for nondegenerate Hermitian spaces over $\mathbb{F}_{q^2}$~\cite{Dieudonne1963}, the unitary group $U_n(\mathbb{F}_{q^2})$ acts transitively on $m$-dimensional totally isotropic subspaces and is generated by unitary reflections and transvections of the form $H(\vb{u}, \tau)$ (with the sole known classical exception $(q, n) = (2, 4)$ not needed for $n \ge 11$).
+Expanding $H(\vb{u}, \tau) H(\vb{u}, \tau)^\dagger = (I_n - \tau \vb{u}\vb{u}^\dagger)(I_n - \tau^q \vb{u}\vb{u}^\dagger) = I_n - (\tau + \tau^q - \nu \tau^{q+1})\vb{u}\vb{u}^\dagger$ shows $H H^\dagger = I_n$ iff $\tau + \tau^q = \nu \tau^{q+1}$ because $\vb{u}\vb{u}^\dagger \ne \vb{0}$. Dividing by $\tau^{q+1} \ne 0$ when $\nu \ne 0$ gives $\mathrm{Tr}_{\mathbb{F}_{q^2}/\mathbb{F}_q}(\tau^{-1}) = \nu$, which has exactly $q$ solutions in $\mathbb{F}_{q^2}$ (none equal to $0$ since $\nu \ne 0$); when $\nu = 0$, $\mathrm{Tr}_{\mathbb{F}_{q^2}/\mathbb{F}_q}(\tau) = 0$ has $q - 1$ nonzero solutions. Unitarity gives $G'(G')^{\,\dagger} = G H H^\dagger G^\dagger = G G^\dagger = \vb{0}$ and $\mathrm{rank}(G') = \mathrm{rank}(G) = m$. By Witt's extension theorem for nondegenerate Hermitian spaces over $\mathbb{F}_{q^2}$~\cite{Dieudonne1963}, the unitary group $U_n(\mathbb{F}_{q^2})$ acts transitively on $m$-dimensional totally isotropic subspaces and is generated by unitary reflections and transvections of the form $H(\vb{u}, \tau)$ (with the sole known classical exception $(q, n) = (2, 4)$ not needed for $n \ge 11$).
 \end{proof}
 
-Executing massive warp-parallel Tabu/WalkSAT trajectories via sparse rank-$1$ Householder steps (weight-$2$, $3$, and $4$ vectors $\vb{u}$) with zero group-symmetry constraints resolved four longstanding open short-length lids: $[[13,1,6]]_3$, $[[11,3,5]]_4$ (inducing $[[11,2,5]]_4$ and $[[12,3,5]]_4$), and the two non-GRS QMDS codes $[[11,1,6]]_5$ and $[[12,0,7]]_5$ ($2d = n - k + 2$, exceeding the classical $\mathbb{F}_5$-MDS length $q + 1 = 6$~\cite{Ball2021}).
+Executing massive warp-parallel Tabu/WalkSAT trajectories via sparse rank-$1$ Householder steps (weight-$2$, $3$, and $4$ vectors $\vb{u}$) with zero group-symmetry constraints resolved four longstanding open short-length bounds: $[[13,1,6]]_3$, $[[11,3,5]]_4$ (inducing $[[11,2,5]]_4$ and $[[12,3,5]]_4$), and the two non-GRS QMDS codes $[[11,1,6]]_5$ and $[[12,0,7]]_5$ ($2d = n - k + 2$, exceeding the classical $\mathbb{F}_5$-MDS length $q + 1 = 6$~\cite{Ball2021}).
 
 \subsection{Two-Block and Three-Block NSC Quasi-Unitary Matrix-Product Codes}
 
@@ -212,7 +214,7 @@ Table~\ref{tab:exact18} lists all $18$ entries in \texttt{CodeTables.de} closed 
 \centering
 \caption{All $18$ previously open entries in \texttt{CodeTables.de} closed to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$) in \texttt{v1.2.0} ($16$ strictly pure stabilizer codes and $2$ terminal $\mathrm{Extend}$ closures).}\label{tab:exact18}
 \vspace{4pt}
-{\footnotesize\setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{1.12}
+{\footnotesize\setlength{\tabcolsep}{5.2pt}\renewcommand{\arraystretch}{1.12}
 \begin{tabular}{@{}ccccccll@{}}
 \toprule
 \# & $q$ & Code $[[n,k]]_q$ & Prev. & \textbf{Exact $d^\star$} & Purity & Construction / Derivation & SHA-256 \\
@@ -227,13 +229,13 @@ $5$ & $4$ & $[[11,2]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & $\mathrm{Pure
 $6$ & $4$ & $[[11,3]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Witt--Householder $\mathrm{IGr}_H$ ($m=4$) & \texttt{440b445eb310} \\
 $7$ & $4$ & $[[12,3]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Ext. & $\mathrm{Extend}([[11,3,5]]_4,\,+1)$ & --- \\
 $8$ & $4$ & $[[21,14]]_{4}$ & $3\text{--}4$ & $\mathbf{4}$ & Pure & $\mathbb{F}_4$-Symplectic ($r_S=7$) & \texttt{1e1f62fb8225} \\
-$9$ & $4$ & $[[23,13]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 3-Eigenmode Vandermonde QT ($m=5, \ell=4, b_p=3$) & \texttt{5d6d9eaab2db} \\
-$10$ & $4$ & $[[24,14]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 4-Eigenmode Vandermonde QT ($m=5, \ell=4, b_p=4$) & \texttt{f1b5bddf1b09} \\
+$9$ & $4$ & $[[23,13]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Vandermonde QT ($m=5, \ell=4, b_p=3$) & \texttt{5d6d9eaab2db} \\
+$10$ & $4$ & $[[24,14]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Vandermonde QT ($m=5, \ell=4, b_p=4$) & \texttt{f1b5bddf1b09} \\
 $11$ & $4$ & $[[25,15]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Unbordered Hermitian QT ($m=5, \ell=5$) & \texttt{6198f35bf566} \\
 $12$ & $4$ & $[[26,16]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Bordered Hermitian QT ($m=5, \ell=5, b_p=1$) & \texttt{739c1d90d608} \\
-$13$ & $4$ & $[[27,17]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 2-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=2$) & \texttt{0ca33cb9420e} \\
-$14$ & $4$ & $[[28,18]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 3-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=3$) & \texttt{a6f6142593e9} \\
-$15$ & $4$ & $[[29,19]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 4-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=4$) & \texttt{8d9f9d3a56ea} \\
+$13$ & $4$ & $[[27,17]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Vandermonde QT ($m=5, \ell=5, b_p=2$) & \texttt{0ca33cb9420e} \\
+$14$ & $4$ & $[[28,18]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Vandermonde QT ($m=5, \ell=5, b_p=3$) & \texttt{a6f6142593e9} \\
+$15$ & $4$ & $[[29,19]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Vandermonde QT ($m=5, \ell=5, b_p=4$) & \texttt{8d9f9d3a56ea} \\
 \midrule
 $16$ & $5$ & $[[11,1]]_{5}$ & $5\text{--}6$ & $\mathbf{6}$ & Pure & Householder Non-GRS QMDS ($m=5$) & \texttt{40b181c84577} \\
 $17$ & $5$ & $[[12,0]]_{5}$ & $6\text{--}7$ & $\mathbf{7}$ & Pure & Householder Self-Dual QMDS ($m=6$) & \texttt{349002c6433a} \\
@@ -403,7 +405,7 @@ G_{4,27,17} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
 \paragraph{11. Pure Exact-Optimal $[[28,18,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 3-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=3$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 28}$\\
 {\footnotesize\texttt{SHA-256: a6f6142593e97216b72ad7ee4e7814e094dfad01e3e2dd3f74dfd054d0e914f3}}
 {\scriptsize\[
-G_{4,28,18} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+G_{4,28,18} = \setlength{\arraycolsep}{1.75pt}\renewcommand{\arraystretch}{0.95}
 \left[\begin{array}{*{28}{r}}
 1 & 0 & 0 & 0 & 0 & 1 & 0 & 4 & 13 & 4 & 7 & 15 & 13 & 11 & 3 & 8 & 12 & 5 & 5 & 12 & 15 & 10 & 11 & 1 & 0 & 2 & 1 & 2 \\
 0 & 1 & 0 & 0 & 0 & 4 & 1 & 0 & 4 & 13 & 3 & 7 & 15 & 13 & 11 & 12 & 8 & 12 & 5 & 5 & 0 & 15 & 10 & 11 & 1 & 2 & 8 & 7 \\
@@ -416,7 +418,7 @@ G_{4,28,18} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
 \paragraph{12. Pure Exact-Optimal $[[29,19,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 4-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=4$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 29}$\\
 {\footnotesize\texttt{SHA-256: 8d9f9d3a56eaaa7a0e666a37d3854d5147ff796b3d65ed185fd98f701159586b}}
 {\scriptsize\[
-G_{4,29,19} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+G_{4,29,19} = \setlength{\arraycolsep}{1.70pt}\renewcommand{\arraystretch}{0.95}
 \left[\begin{array}{*{29}{r}}
 1 & 0 & 0 & 0 & 0 & 5 & 13 & 8 & 1 & 13 & 3 & 4 & 6 & 6 & 15 & 10 & 8 & 8 & 10 & 5 & 13 & 1 & 15 & 13 & 8 & 2 & 1 & 2 & 1 \\
 0 & 1 & 0 & 0 & 0 & 13 & 5 & 13 & 8 & 1 & 15 & 3 & 4 & 6 & 6 & 5 & 10 & 8 & 8 & 10 & 8 & 13 & 1 & 15 & 13 & 11 & 15 & 7 & 1 \\
@@ -469,16 +471,16 @@ G_{8,15,5} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
 
 \subsection{Representative High-Distance, Odd-\texorpdfstring{$r_S$}{r\_S}, and \texorpdfstring{$\Delta d = +2$}{Delta d = +2} Parent Codes}
 
-Beyond the $18$ exact-optimal lids, Table~\ref{tab:milestones} highlights representative parent codes across $q \in \{2, 3, 4, 5, 7, 8\}$, including distance-$7$ and distance-$8$ qubit codes ($[[33,11,7]]_2$, $[[34,12,7]]_2$, $[[75,39,8]]_2$), distance-$9$ qutrit and quaternary codes ($[[40,14,9]]_3$, $[[37,13,9]]_4$), distance-$12$ quinary codes ($[[52,20,12]]_5$), odd-$r_S$ symplectic codes up to $d = 13$ ($[[46,11,13]]_8$), $3$-block NSC MP3 codes, and pure distance-$16$ codes with $\Delta d = +2$ leaps up to $n = 100$.
+Beyond the $18$ exact-optimal closures, Table~\ref{tab:milestones} highlights representative parent codes across $q \in \{2,\allowbreak 3,\allowbreak 4,\allowbreak 5,\allowbreak 7,\allowbreak 8\}$, including distance-$7$ and distance-$8$ qubit codes ($[[33,11,7]]_2$, $[[34,12,7]]_2$, $[[75,39,8]]_2$), distance-$9$ qutrit and quaternary codes ($[[40,14,9]]_3$, $[[37,13,9]]_4$), distance-$12$ quinary codes ($[[52,20,12]]_5$), odd-$r_S$ symplectic codes up to $d = 13$ ($[[46,11,13]]_8$), $3$-block NSC MP3 codes, and pure distance-$16$ codes with $\Delta d = +2$ leaps up to $n = 100$.
 
 \begin{table}[htbp]
 \centering
 \caption{Selected milestone pure parent stabilizer codes from the $397$-certificate \texttt{v1.2.0} suite (the complete catalog of all $397$ parents appears in Appendix~\ref{app:catalog}).}\label{tab:milestones}
 \vspace{4pt}
-{\footnotesize\setlength{\tabcolsep}{5.2pt}\renewcommand{\arraystretch}{1.08}
+{\footnotesize\setlength{\tabcolsep}{5.5pt}\renewcommand{\arraystretch}{1.08}
 \begin{tabular}{@{}ccccll@{}}
 \toprule
-$q$ & Parent $[[n,k,d]]_q$ & Prev. & \textbf{New} & Construction Family & SHA-256 (12-hex) \\
+$q$ & Parent $[[n,k,d]]_q$ & Prev. & \textbf{New} & Construction Family & SHA-256 \\
 \midrule
 $2$ & $[[33,11,7]]_{2}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Unbordered Hermitian QT ($m=11, \ell=3$) & \texttt{ec7fdf4fa65f} \\
 $2$ & $[[34,12,7]]_{2}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Bordered Hermitian QT ($m=11, \ell=3, b_p=1$) & \texttt{f31c1d11f597} \\
@@ -539,30 +541,32 @@ From each verified \emph{pure} $[[n, k, d]]_q$ parent stabilizer code ($d \ge 3$
     \item $\mathrm{Puncture}$ ($1 \le s \le d - 2$, $n - s \ge \max(1, k)$): Puncturing $s$ qudits of a pure $[[n, k, d]]_q$ code yields a \emph{pure} $[[n - s, k, \ge d - s]]_q$ code.
     \item $\mathrm{Shorten}$ ($1 \le s \le d - 2$, $n - s \ge k + s$): Shortening $s$ qudits of a pure $[[n, k, d]]_q$ code yields a \emph{pure} $[[n - s, k + s, \ge d - s]]_q$ code.
   \end{itemize}
-  \item \textbf{Impure Terminal Ancilla Extension ($\mathrm{Extend}$):} Appending $s \ge 1$ ancilla qudits stabilized by $Z^{\otimes s}$ yields a valid $[[n + s, k, \ge d]]_q$ stabilizer code containing weight-$1$ stabilizers (hence impure whenever $d \ge 2$).
+  \item \textbf{Impure Terminal Ancilla Extension ($\mathrm{Extend}$):} Appending $s \ge 1$ ancilla qudits stabilized by $Z^{\otimes s}$ yields a valid $[[n + s, k, \ge d]]_q$ stabilizer code containing weight-1 stabilizers (hence impure whenever $d \ge 2$).
 \end{enumerate}
-Because $\mathrm{PureSubcode}$ requires purity ($d(C_S) \ge d$) whereas $\mathrm{Extend}$ introduces weight-$1$ stabilizers, $\mathrm{PureSubcode}$ (and similarly $\mathrm{Puncture}$/$\mathrm{Shorten}$) must \emph{never} be applied after $\mathrm{Extend}$. Accordingly, both \path{CODETABLES_V1_2_IMPACT_REPORT.json} and \texttt{verify\_all\_qecc.py} audit two separate closure tiers:
+Because $\mathrm{PureSubcode}$ requires purity ($d(C_S) \ge d$) whereas $\mathrm{Extend}$ introduces weight-1 stabilizers, $\mathrm{PureSubcode}$ (and likewise $\mathrm{Puncture}$ and $\mathrm{Shorten}$) must \emph{never} be applied after $\mathrm{Extend}$. Accordingly, both \texttt{CODETABLES\_\allowbreak V1\_\allowbreak 2\_\allowbreak IMPACT\_\allowbreak REPORT.json} and \texttt{verify\_all\_qecc.py} audit two separate closure tiers:
 \begin{itemize}\small
-  \item \textbf{Tier~1 --- Strictly Pure Closure (`Pure Closure'):} Iterating only $\{\mathrm{PureSubcode}, \mathrm{Puncture}, \mathrm{Shorten}\}$ on the $397$ pure parents until convergence strictly improves \textbf{1,450} entries in \texttt{CodeTables.de} as \emph{pure} stabilizer codes and closes \textbf{16} entries to exact optimality.
+  \item \textbf{Tier~1 --- Strictly Pure Closure (`Pure Closure'):} Iterating only $\{\mathrm{PureSubcode},\allowbreak \mathrm{Puncture},\allowbreak \mathrm{Shorten}\}$ on the $397$ pure parents until convergence strictly improves \textbf{1,450} entries in \texttt{CodeTables.de} as \emph{pure} stabilizer codes and closes \textbf{16} entries to exact optimality.
   \item \textbf{Tier~2 --- Full Purity-Respecting Closure (`Full Closure'):} Applying $\mathrm{Extend}(\cdot, +s)$ solely as a terminal step to the Tier~1 pure codes reaches \textbf{204} additional entries (including $2$ exact-optimal closures: $[[37,26,4]]_2$ from $[[36,26,4]]_2$ and $[[12,3,5]]_4$ from $[[11,3,5]]_4$, while further raising $54$ Tier~1 cells by an extra $+1$), yielding $\mathbf{1{,}450 + 204 = 1{,}654}$ improved entries and $\mathbf{16 + 2 = 18}$ exact-optimal closures in total (compared with $\mathbf{1{,}575}$ improved entries when restricting all four operators to a single step from the $397$ parents).
 \end{itemize}
 
 \subsection{Zero-Symmetry Clean-Room Verification and Data Availability}
 
 To rule out any bug in finite-field tables, polynomial/Fourier algebra, or GPU kernel indexing, every single one of the $397$ parent certificates was verified from raw generator matrix entries without assuming any cyclic, constacyclic, Reed--Solomon, or group symmetry by three independent software stacks:
-\begin{enumerate}\small
+\begin{enumerate}\small\setlength{\itemsep}{2pt}
   \item \textbf{Four Zero-Shared-Code 20-Thread Rust Clean-Room Verifiers (\texttt{verifiers/*.rs}):}
-  \begin{itemize}
+  \begin{itemize}\setlength{\itemsep}{1.5pt}
     \item \texttt{verify\_hermitian\_universal.rs}: Self-tests all $\mathbb{F}_{q^2}$ field axioms and Hexacode ground truths, verifies $\mathrm{rank}_{\mathbb{F}_{q^2}}(G) = m$ and $G G^\dagger = \vb{0}$, and exhaustively proves every $(d - 1)$-column subset of $G$ is linearly independent via branchless SWAR \texttt{[u128; 3]} XOR Gaussian elimination (characteristic~$2$) and pre-scaled basis tables (odd characteristic).
-    \item \texttt{verify\_symplectic\_universal.rs}: Independently constructs $\mathbb{F}_q$, verifies $\mathrm{rank}_{\mathbb{F}_q}([X \mid Z]) = r_S$ and $X Z^\top - Z X^\top = \vb{0}$, and proves $\mathrm{rank}_{\mathbb{F}_q}([X_{\cdot, S} \mid Z_{\cdot, S}]) = 2(d - 1)$ across all $\binom{n}{d-1}$ subsets $S$ with dynamic $5$-tuple work stealing.
+    \item \texttt{verify\_symplectic\_universal.rs}: Independently constructs $\mathbb{F}_q$, verifies $\mathrm{rank}_{\mathbb{F}_q}\!\bigl([\,X \;\big|\; Z\,]\bigr) = r_S$ and $X Z^\top - Z X^\top = \vb{0}$, and proves $\mathrm{rank}_{\mathbb{F}_q}\!\bigl([\,X_{\cdot, S} \;\big|\; Z_{\cdot, S}\,]\bigr) = 2(d - 1)$ across all $\binom{n}{d-1}$ subsets $S$ with dynamic $5$-tuple work stealing.
     \item \texttt{verify\_mp2\_cleanroom.rs} and \texttt{verify\_mp3\_cleanroom.rs}: Verify the exact block identities of Theorem~\ref{thm:mp23}, full rank, $G G^\dagger = \vb{0}$, NSC non-degeneracy ($D_{1,j} E_j \ne D_{2,j}$), and exhaustive component dual distances $d(C_1^{\perp_H}) \ge d$, $2d(C_2^{\perp_H}) \ge d$, and $3d(C_3^{\perp_H}) \ge d$.
   \end{itemize}
   \item \textbf{Standalone Python + NumPy Audit (\texttt{verify\_all\_qecc.py}):} Verifies all $397$ SHA-256 digests, algebraic orthogonality/rank/NSC identities, Rust distance proofs, and the exact $1{,}575$ / $1{,}450$ / $1{,}654$ / $18$ ($16$P+$2$E) \texttt{CodeTables.de} propagation counts.
-  \item \textbf{Native Magma Scripts (\texttt{magma/verify\_all\_18\_exact\_optimal.m} \& \texttt{magma/verify\_all\_397\_parents.m}):} Verify every parent code directly via Magma's native \texttt{HermitianDual}, \texttt{MinimumWeight}, and \texttt{QuantumCode} intrinsics.
+  \item \textbf{Native Magma Scripts (\texttt{magma/\allowbreak verify\_\allowbreak all\_\allowbreak 18\_\allowbreak exact\_\allowbreak optimal.m} and \texttt{magma/\allowbreak verify\_\allowbreak all\_\allowbreak 397\_\allowbreak parents.m}):} Verify every parent code directly via Magma's native \texttt{HermitianDual}, \texttt{MinimumWeight}, and \texttt{QuantumCode} intrinsics.
 \end{enumerate}
-All $397$ JSON certificates, machine-readable impact reports (\path{CODETABLES_V1_2_IMPACT_REPORT.json}), Rust/Python/Magma verifiers, and CUDA search solvers are openly archived at \url{https://github.com/ramuza0113-sketch/qecc-codetables-2026} and Zenodo Concept DOI \href{https://doi.org/10.5281/zenodo.24513985}{\texttt{doi:10.5281/zenodo.24513985}}.
+All $397$ JSON certificates, the impact report \texttt{CODETABLES\_\allowbreak V1\_\allowbreak 2\_\allowbreak IMPACT\_\allowbreak REPORT.json}, Rust/\allowbreak Python/\allowbreak Magma verifiers, and CUDA search solvers are permanently archived at:\\[2pt]
+\hspace*{1.2em}\textbf{Zenodo (\texttt{v1.2.0}):} \url{https://doi.org/10.5281/zenodo.24617669} \quad (\textbf{Concept:} \href{https://doi.org/10.5281/zenodo.24513985}{\texttt{10.5281/zenodo.24513985}});\\[1pt]
+\hspace*{1.2em}\textbf{GitHub:} \url{https://github.com/ramuza0113-sketch/qecc-codetables-2026}.
 
-\begin{thebibliography}{99}
+\begin{thebibliography}{99}\raggedright
 
 \bibitem{Ashikhmin2001}
 A.~Ashikhmin and E.~Knill,
@@ -615,18 +619,18 @@ E.~M.~Rains,
 \appendix
 \section{Complete Catalog of All 397 Pure Parent Stabilizer Certificates}\label{app:catalog}
 
-Table~\ref{tab:all397} lists every explicit pure parent certificate $\texttt{QECC\_q}\{q\}\texttt{\_n}\{n\}\texttt{\_k}\{k\}\texttt{\_d}\{d\}\texttt{.json}$ included in \texttt{v1.2.0}, ordered by $(q, n, k)$. Entries marked $^\star$ close \texttt{CodeTables.de} directly to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$), and all SHA-256 digests are shown uniformly by their leading $12$ hexadecimal characters.
+Table~\ref{tab:all397} lists every explicit pure parent certificate $\texttt{QECC\_q}\{q\}\texttt{\_n}\{n\}\texttt{\_k}\{k\}\texttt{\_d}\{d\}\texttt{.json}$ included in \texttt{v1.2.0}, ordered by $(q, n, k)$. Entries marked with a star ($\star$, e.g.\ $[[36,26,4]]_2^\star$) close \texttt{CodeTables.de} directly to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$), and all SHA-256 digests are shown uniformly by their leading $12$ hexadecimal characters.
 
-{\footnotesize\setlength{\tabcolsep}{8.0pt}\renewcommand{\arraystretch}{1.05}
+{\footnotesize\setlength{\tabcolsep}{6.2pt}\renewcommand{\arraystretch}{1.05}
 \begin{longtable}{@{}rccccl@{}}
-\caption{Complete catalog of all $397$ pure parent quantum stabilizer certificates (\texttt{v1.2.0}).}\label{tab:all397}\\
+\caption{Complete catalog of all $397$ pure parent quantum stabilizer certificates (\texttt{v1.2.0}; leading $12$-hex SHA-256 digests).}\label{tab:all397}\\
 \toprule
-\# & Parent $[[n,k,d]]_q$ & Prev.\ Bound & \textbf{New Bound} & Architecture & SHA-256 (12-hex) \\
+\# & Parent $[[n,k,d]]_q$ & Prev.\ Bound & \textbf{New Bound} & Architecture & SHA-256 \\
 \midrule
 \endfirsthead
 \multicolumn{6}{c}{\tablename\ \thetable\ -- \emph{Continued from previous page}} \\
 \toprule
-\# & Parent $[[n,k,d]]_q$ & Prev.\ Bound & \textbf{New Bound} & Architecture & SHA-256 (12-hex) \\
+\# & Parent $[[n,k,d]]_q$ & Prev.\ Bound & \textbf{New Bound} & Architecture & SHA-256 \\
 \midrule
 \endhead
 \midrule

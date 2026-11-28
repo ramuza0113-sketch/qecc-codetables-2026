@@ -4,7 +4,7 @@
 
 **Author**: Katsutoshi Hashimoto (Independent Researcher, Japan — `ramuza0113@gmail.com` · [ORCID: `0009-0009-8292-5085`](https://orcid.org/0009-0009-8292-5085))  
 **Date**: November 28, 2026 (`v1.2.0`)  
-**Zenodo Concept DOI (all versions)**: [`10.5281/zenodo.24513985`](https://doi.org/10.5281/zenodo.24513985)  
+**Zenodo DOI (`v1.2.0`)**: [`10.5281/zenodo.24617669`](https://doi.org/10.5281/zenodo.24617669) · **Concept DOI (all versions)**: [`10.5281/zenodo.24513985`](https://doi.org/10.5281/zenodo.24513985)  
 **Paper (`v1.2.0` PDF)**: [`Hashimoto_2026_Quantum_Codes_v1_2.pdf`](Hashimoto_2026_Quantum_Codes_v1_2.pdf) · [`paper/main.pdf`](paper/main.pdf) ([`paper/main.tex`](paper/main.tex))  
 **Machine-Readable Impact Report**: [`CODETABLES_V1_2_IMPACT_REPORT.json`](CODETABLES_V1_2_IMPACT_REPORT.json)  
 **Magma Verification Scripts**: [`magma/verify_all_18_exact_optimal.m`](magma/verify_all_18_exact_optimal.m) · [`magma/verify_all_397_parents.m`](magma/verify_all_397_parents.m)
