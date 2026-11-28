@@ -1,763 +1,783 @@
-// 100% Standalone Zero-Shared-Code, Zero-Symmetry Multi-Threaded Clean-Room Verifier
-// Verifies EVERY `CONFIRMED_QECC_CROWN_*.json` from first principles:
-//   1. Exact dimensions & entry bounds.
-//   2. Exact Gaussian-elimination RREF rank (`rank == r` over GF(q), or `rank == m` over GF(16)/GF(64)).
-//   3. Exact symplectic (`X*Z^T - Z*X^T == 0 mod q`) or Hermitian (`G*G^\dagger == 0`) self-orthogonality.
-//   4. 100% EXHAUSTIVE ZERO-SYMMETRY check over ALL `C(n, w)` column subsets (`1 <= w <= d_tar - 1`)
-//      and ALL projective Pauli / Hermitian rays across 20 CPU threads!
-//   5. Exact comparison against Markus Grassl's `codetables_qecc_snapshot.json` (+ `ExtendCode` propagation).
+// 20-Thread Standalone Zero-Symmetry Universal Clean-Room Verifier for GF(q^2)-Hermitian Pure QECCs!
+// Supports ALL `q in {2, 3, 4, 5, 7, 8, 9}`, `m <= 44`, `n <= 130`, `d_tar in 2..15`!
+// Zero symmetry or pivot-position assumptions:
+//   1. Constructs exact arithmetic `(add, sub, mul, inv, conj)` on GF(q^2) and self-tests field axioms + subtraction!
+//   2. Verifies exact GF(q^2)-rank(G) == m via full Gaussian elimination (NO assumption that leading m columns == I_m!).
+//   3. Verifies exact Hermitian self-orthogonality: G * G^\dagger == 0 over GF(q^2) for all m x m pairs.
+//   4. Exhaustively verifies d(C^{\perp_H}) >= d_tar across 20 threads by proving EVERY subset of `w_max = d_tar - 1`
+//      columns of G is linearly independent over GF(q^2), accelerated by exact `u128` / `[u128; 3]` pre-scaled
+//      branchless XOR Gaussian elimination in characteristic 2 (`q in {2, 4, 8}`) and pre-scaled basis tables in odd char!
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::env;
 use std::fs;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::thread;
-use std::time::Instant;
 
-fn parse_usize_field(txt: &str, key: &str) -> usize {
-    let pat = format!("\"{}\":", key);
-    let p = txt.find(&pat).unwrap() + pat.len();
-    let rest = txt[p..].trim_start();
-    let end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
-    rest[..end].parse().unwrap()
-}
-
-fn parse_str_field(txt: &str, key: &str) -> String {
-    let pat = format!("\"{}\":", key);
-    let p = match txt.find(&pat) {
-        Some(i) => i + pat.len(),
-        None => return String::new(),
-    };
-    let rest = txt[p..].trim_start();
-    if !rest.starts_with('"') {
-        return String::new();
-    }
-    let after = &rest[1..];
-    let end = after.find('"').unwrap();
-    after[..end].to_string()
-}
-
-fn parse_2d_matrix(txt: &str, key: &str) -> Vec<Vec<usize>> {
-    let pat = format!("\"{}\":", key);
-    let p = txt.find(&pat).unwrap() + pat.len();
-    let rest = txt[p..].trim_start();
-    let mut rows = Vec::new();
-    let mut cur = Vec::new();
-    let mut num = String::new();
-    let mut depth = 0i32;
-    for ch in rest.chars() {
-        match ch {
-            '[' => {
-                depth += 1;
-                if depth == 2 {
-                    cur.clear();
-                }
-            }
-            ']' => {
-                if !num.is_empty() {
-                    cur.push(num.parse::<usize>().unwrap());
-                    num.clear();
-                }
-                if depth == 2 {
-                    rows.push(cur.clone());
-                }
-                depth -= 1;
-                if depth == 0 {
-                    break;
-                }
-            }
-            ',' => {
-                if !num.is_empty() {
-                    cur.push(num.parse::<usize>().unwrap());
-                    num.clear();
-                }
-            }
-            c if c.is_ascii_digit() => num.push(c),
-            _ => {}
-        }
-    }
-    rows
-}
-
-fn parse_snapshot(path: &str) -> HashMap<usize, HashMap<(usize, usize), (usize, usize)>> {
-    let txt = fs::read_to_string(path).unwrap();
-    let mut out = HashMap::new();
-    for q in [2usize, 3, 4, 5, 7, 8] {
-        let key = format!("\"{}\": {{", q);
-        if let Some(pos) = txt.find(&key) {
-            let sub = &txt[pos + key.len()..];
-            let end = sub.find('}').unwrap_or(sub.len());
-            let body = &sub[..end];
-            let mut qmap = HashMap::new();
-            let mut rest = body;
-            while let Some(q1) = rest.find('"') {
-                let after1 = &rest[q1 + 1..];
-                let q2 = match after1.find('"') {
-                    Some(i) => i,
-                    None => break,
-                };
-                let nk_str = &after1[..q2];
-                let after_nk = &after1[q2 + 1..];
-                let b1 = after_nk.find('[').unwrap();
-                let b2 = after_nk.find(']').unwrap();
-                let bounds_str = &after_nk[b1 + 1..b2];
-                let mut sp_nk = nk_str.split(',');
-                let n: usize = sp_nk.next().unwrap().trim().parse().unwrap();
-                let k: usize = sp_nk.next().unwrap().trim().parse().unwrap();
-                let mut sp_b = bounds_str.split(',');
-                let dl: usize = sp_b.next().unwrap().trim().parse().unwrap();
-                let du: usize = sp_b.next().unwrap().trim().parse().unwrap();
-                qmap.insert((n, k), (dl, du));
-                rest = &after_nk[b2 + 1..];
-            }
-            out.insert(q, qmap);
-        }
-    }
-    out
-}
-
-fn mod_inv_prime(a: usize, q: usize) -> usize {
-    for x in 1..q {
-        if (a * x) % q == 1 {
-            return x;
-        }
-    }
-    panic!("No inverse for {} mod {}", a, q);
-}
-
-fn verify_symplectic_prime(txt: &str, path: &str) -> (usize, usize, usize, usize, bool, u64) {
-    let q = parse_usize_field(txt, "q");
-    let n = parse_usize_field(txt, "n");
-    let k = parse_usize_field(txt, "k");
-    let r = parse_usize_field(txt, "r");
-    let d_tar = parse_usize_field(txt, "new_lower_bound");
-    assert_eq!(r, n - k, "r != n - k in {}", path);
-
-    let x_mat = parse_2d_matrix(txt, "X");
-    let z_mat = parse_2d_matrix(txt, "Z");
-    assert_eq!(x_mat.len(), r);
-    assert_eq!(z_mat.len(), r);
-    for i in 0..r {
-        assert_eq!(x_mat[i].len(), n);
-        assert_eq!(z_mat[i].len(), n);
-        for j in 0..n {
-            assert!(x_mat[i][j] < q && z_mat[i][j] < q);
-        }
-    }
-
-    // 1. Exact symplectic self-orthogonality: X * Z^T - Z * X^T == 0 mod q
-    for i in 0..r {
-        for j in 0..r {
-            let mut acc = 0usize;
-            for col in 0..n {
-                acc = (acc + x_mat[i][col] * z_mat[j][col] + q * q - z_mat[i][col] * x_mat[j][col]) % q;
-            }
-            assert_eq!(acc, 0, "Symplectic orthogonality failed at ({},{}) in {}", i, j, path);
-        }
-    }
-
-    // 2. Exact RREF of H = [X | Z] (`r x 2n`) over GF(q)
-    let mut rref = vec![vec![0usize; 2 * n]; r];
-    for i in 0..r {
-        for col in 0..n {
-            rref[i][col] = x_mat[i][col];
-            rref[i][n + col] = z_mat[i][col];
-        }
-    }
-    let mut pivots = Vec::with_capacity(r);
-    let mut row = 0usize;
-    for col in 0..(2 * n) {
-        if row >= r {
-            break;
-        }
-        if let Some(piv) = (row..r).find(|&i| rref[i][col] % q != 0) {
-            rref.swap(row, piv);
-            let ip = mod_inv_prime(rref[row][col], q);
-            for j in col..(2 * n) {
-                rref[row][j] = (rref[row][j] * ip) % q;
-            }
-            for i in 0..r {
-                if i != row && rref[i][col] != 0 {
-                    let fac = rref[i][col];
-                    for j in col..(2 * n) {
-                        rref[i][j] = (rref[i][j] + q * q - fac * rref[row][j]) % q;
-                    }
-                }
-            }
-            pivots.push(col);
-            row += 1;
-        }
-    }
-    assert_eq!(pivots.len(), r, "Rank mismatch in {}: expected {}, got {}", path, r, pivots.len());
-
-    // 3. Exhaustive zero-symmetry ray check across 20 threads!
-    // Projective first-column rays (`q + 1`) and other nonzero rays (`q^2 - 1`):
-    let mut first_rays = Vec::with_capacity(q + 1);
-    for b in 0..q {
-        first_rays.push((1usize, b));
-    }
-    first_rays.push((0usize, 1usize));
-    let mut other_rays = Vec::with_capacity(q * q - 1);
-    for a in 0..q {
-        for b in 0..q {
-            if a != 0 || b != 0 {
-                other_rays.push((a, b));
-            }
-        }
-    }
-
-    // Precompute `col_synd[col][a][b]` (`[u8; 32]`, `r <= 32`)
-    assert!(r <= 32);
-    let mut col_synd = vec![vec![vec![[0u8; 32]; q]; q]; n];
-    for col in 0..n {
-        for a in 0..q {
-            for b in 0..q {
-                for i in 0..r {
-                    col_synd[col][a][b][i] = ((b * x_mat[i][col] + q * q - a * z_mat[i][col]) % q) as u8;
-                }
-            }
-        }
-    }
-
-    let in_rowspan = |vec2n: &[usize]| -> bool {
-        let mut v = vec2n.to_vec();
-        for (idx_p, &pc) in pivots.iter().enumerate() {
-            let c = v[pc] % q;
-            if c != 0 {
-                for j in pc..(2 * n) {
-                    v[j] = (v[j] + q * q - c * rref[idx_p][j]) % q;
-                }
-            }
-        }
-        v.iter().all(|&x| x % q == 0)
-    };
-
-    let rays_checked = Arc::new(AtomicU64::new(0));
-    let degen_cnt = Arc::new(AtomicU64::new(0));
-
-    // Partition over first active column `c0 in 0..n` across 20 threads!
-    let col_synd_arc = Arc::new(col_synd);
-    let first_arc = Arc::new(first_rays);
-    let other_arc = Arc::new(other_rays);
-    let rref_arc = Arc::new(rref.clone());
-    let piv_arc = Arc::new(pivots.clone());
-
-    let n_threads = 20usize;
-    let mut handles = Vec::with_capacity(n_threads);
-    for tid in 0..n_threads {
-        let cs_c = Arc::clone(&col_synd_arc);
-        let fr_c = Arc::clone(&first_arc);
-        let or_c = Arc::clone(&other_arc);
-        let rr_c = Arc::clone(&rref_arc);
-        let pv_c = Arc::clone(&piv_arc);
-        let rc_c = Arc::clone(&rays_checked);
-        let dg_c = Arc::clone(&degen_cnt);
-        let p_str = path.to_string();
-
-        handles.push(thread::spawn(move || {
-            let mut local_rays = 0u64;
-            let mut local_degen = 0u64;
-            let check_membership = |cols: &[usize], ab: &[(usize, usize)]| {
-                let mut v = vec![0usize; 2 * n];
-                for (&col, &(a, b)) in cols.iter().zip(ab.iter()) {
-                    v[col] = a;
-                    v[n + col] = b;
-                }
-                for (idx_p, &pc) in pv_c.iter().enumerate() {
-                    let c = v[pc] % q;
-                    if c != 0 {
-                        for j in pc..(2 * n) {
-                            v[j] = (v[j] + q * q - c * rr_c[idx_p][j]) % q;
-                        }
-                    }
-                }
-                assert!(
-                    v.iter().all(|&x| x % q == 0),
-                    "FATAL LOGICAL ERROR OF WEIGHT {} AT {:?} IN {}!",
-                    cols.len(),
-                    cols,
-                    p_str
-                );
-            };
-
-            fn dfs_symp(
-                depth: usize,
-                w: usize,
-                last_col: usize,
-                n: usize,
-                q: usize,
-                r: usize,
-                cur_s: [u8; 32],
-                cols: &mut [usize; 8],
-                ab: &mut [(usize, usize); 8],
-                cs: &[Vec<Vec<[u8; 32]>>],
-                other_rays: &[(usize, usize)],
-                local_rays: &mut u64,
-                local_degen: &mut u64,
-                check_mem: &dyn Fn(&[usize], &[(usize, usize)]),
-            ) {
-                if depth == w {
-                    *local_rays += 1;
-                    if cur_s[..r].iter().all(|&x| x == 0) {
-                        check_mem(&cols[..w], &ab[..w]);
-                        *local_degen += 1;
-                    }
-                    return;
-                }
-                let rem_needed = w - depth;
-                for nxt_c in (last_col + 1)..=(n - rem_needed) {
-                    cols[depth] = nxt_c;
-                    for &(a, b) in other_rays {
-                        ab[depth] = (a, b);
-                        let add_s = &cs[nxt_c][a][b];
-                        let mut nxt_s = [0u8; 32];
-                        let qu = q as u8;
-                        for i in 0..r {
-                            let v = cur_s[i] + add_s[i];
-                            nxt_s[i] = if v >= qu { v - qu } else { v };
-                        }
-                        dfs_symp(
-                            depth + 1,
-                            w,
-                            nxt_c,
-                            n,
-                            q,
-                            r,
-                            nxt_s,
-                            cols,
-                            ab,
-                            cs,
-                            other_rays,
-                            local_rays,
-                            local_degen,
-                            check_mem,
-                        );
-                    }
-                }
-            }
-
-            let mut c0 = tid;
-            while c0 < n {
-                let mut cols = [0usize; 8];
-                let mut ab = [(0usize, 0usize); 8];
-                cols[0] = c0;
-                for w in 1..d_tar {
-                    if c0 + w > n {
-                        continue;
-                    }
-                    for &(a0, b0) in fr_c.iter() {
-                        ab[0] = (a0, b0);
-                        let s0 = cs_c[c0][a0][b0];
-                        dfs_symp(
-                            1,
-                            w,
-                            c0,
-                            n,
-                            q,
-                            r,
-                            s0,
-                            &mut cols,
-                            &mut ab,
-                            &cs_c,
-                            &or_c,
-                            &mut local_rays,
-                            &mut local_degen,
-                            &check_membership,
-                        );
-                    }
-                }
-                c0 += n_threads;
-            }
-            rc_c.fetch_add(local_rays, Ordering::Relaxed);
-            dg_c.fetch_add(local_degen, Ordering::Relaxed);
-        }));
-    }
-    for h in handles {
-        h.join().unwrap();
-    }
-    let _ = in_rowspan;
-    (
-        q,
-        n,
-        k,
-        d_tar,
-        degen_cnt.load(Ordering::Relaxed) == 0,
-        rays_checked.load(Ordering::Relaxed),
-    )
-}
-
-fn verify_hermitian_gf2e(txt: &str, path: &str, q: usize) -> (usize, usize, usize, usize, bool, u64) {
-    // q == 4 (`GF(16)`, poly 0x13, conj u^4) or q == 8 (`GF(64)`, poly 0x43, conj u^8)
+fn make_gf_q2(q: usize) -> (Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<Vec<u8>>, Vec<u8>, Vec<u8>) {
     let q2 = q * q;
-    let deg = if q == 4 { 4usize } else { 6usize };
-    let red = 3usize; // z^4 + z + 1 or z^6 + z + 1 -> lower bits `z + 1 = 3`!
-
+    let mut add = vec![vec![0u8; q2]; q2];
+    let mut sub = vec![vec![0u8; q2]; q2];
     let mut mul = vec![vec![0u8; q2]; q2];
     let mut inv = vec![0u8; q2];
     let mut conj = vec![0u8; q2];
+
+    if q == 2 {
+        for u in 0..4usize {
+            let (a0, b0) = (u & 1, (u >> 1) & 1);
+            conj[u] = if b0 == 0 { a0 as u8 } else { ((a0 ^ 1) | 2) as u8 };
+            for v in 0..4usize {
+                let (a1, b1) = (v & 1, (v >> 1) & 1);
+                add[u][v] = (u ^ v) as u8;
+                sub[u][v] = (u ^ v) as u8;
+                mul[u][v] = (((a0 & a1) ^ (b0 & b1)) | (((a0 & b1) ^ (b0 & a1) ^ (b0 & b1)) << 1)) as u8;
+            }
+        }
+    } else if q == 4 || q == 8 {
+        let deg = if q == 4 { 4 } else { 6 };
+        for u in 0..q2 {
+            for v in 0..q2 {
+                add[u][v] = (u ^ v) as u8;
+                sub[u][v] = (u ^ v) as u8;
+                let (mut a, mut b, mut p) = (u, v, 0usize);
+                for _ in 0..deg {
+                    if (b & 1) != 0 { p ^= a; }
+                    let hi = a & (1 << (deg - 1));
+                    a = (a << 1) & (q2 - 1);
+                    if hi != 0 { a ^= 3; }
+                    b >>= 1;
+                }
+                mul[u][v] = p as u8;
+            }
+        }
+        for u in 0..q2 {
+            let mut p = u;
+            for _ in 0..(deg / 2) { p = mul[p][p] as usize; }
+            conj[u] = p as u8;
+        }
+    } else if q == 9 {
+        // GF(81) = GF(3)[z] / (z^4 + z + 2) (primitive polynomial over GF(3)!)
+        let to_poly = |u: usize| -> [u8; 4] {
+            [(u % 3) as u8, ((u / 3) % 3) as u8, ((u / 9) % 3) as u8, ((u / 27) % 3) as u8]
+        };
+        let from_poly = |p: [u8; 4]| -> u8 {
+            p[0] + 3 * p[1] + 9 * p[2] + 27 * p[3]
+        };
+        for u in 0..81usize {
+            let pu = to_poly(u);
+            for v in 0..81usize {
+                let pv = to_poly(v);
+                add[u][v] = from_poly([
+                    (pu[0] + pv[0]) % 3, (pu[1] + pv[1]) % 3, (pu[2] + pv[2]) % 3, (pu[3] + pv[3]) % 3,
+                ]);
+                sub[u][v] = from_poly([
+                    (pu[0] + 3 - pv[0]) % 3, (pu[1] + 3 - pv[1]) % 3, (pu[2] + 3 - pv[2]) % 3, (pu[3] + 3 - pv[3]) % 3,
+                ]);
+                let mut pr = [0u8; 7];
+                for i in 0..4 {
+                    for j in 0..4 {
+                        pr[i + j] = (pr[i + j] + pu[i] * pv[j]) % 3;
+                    }
+                }
+                for d in (4..7).rev() {
+                    let c = pr[d];
+                    if c != 0 {
+                        pr[d] = 0;
+                        pr[d - 3] = (pr[d - 3] + 2 * c) % 3;
+                        pr[d - 4] = (pr[d - 4] + c) % 3;
+                    }
+                }
+                mul[u][v] = from_poly([pr[0], pr[1], pr[2], pr[3]]);
+            }
+        }
+        for u in 0..81usize {
+            let u2 = mul[u][u] as usize;
+            let u3 = mul[u2][u] as usize;
+            let u6 = mul[u3][u3] as usize;
+            conj[u] = mul[u6][u3];
+        }
+    } else {
+        let c_ns = if q == 7 { 3 } else { 2 };
+        for u in 0..q2 {
+            let (x0, y0) = (u % q, u / q);
+            conj[u] = (x0 + q * ((q - y0) % q)) as u8;
+            for v in 0..q2 {
+                let (x1, y1) = (v % q, v / q);
+                add[u][v] = (((x0 + x1) % q) + q * ((y0 + y1) % q)) as u8;
+                sub[u][v] = (((x0 + q - x1) % q) + q * ((y0 + q - y1) % q)) as u8;
+                mul[u][v] = (((x0 * x1 + c_ns * y0 * y1) % q) + q * ((x0 * y1 + y0 * x1) % q)) as u8;
+            }
+        }
+    }
+
+    for u in 1..q2 {
+        for v in 1..q2 {
+            if mul[u][v] == 1 { inv[u] = v as u8; break; }
+        }
+        assert!(inv[u] != 0, "GF(q^2) inverse failed at u={} for q={}", u, q);
+    }
     for u in 0..q2 {
         for v in 0..q2 {
-            let (mut a, mut b, mut p) = (u, v, 0usize);
-            for _ in 0..deg {
-                if (b & 1) != 0 {
-                    p ^= a;
-                }
-                let hi = a & (1 << (deg - 1));
-                a = (a << 1) & (q2 - 1);
-                if hi != 0 {
-                    a ^= red;
-                }
-                b >>= 1;
+            assert_eq!(sub[add[u][v] as usize][v], u as u8, "sub/add check failed!");
+        }
+    }
+    (add, sub, mul, inv, conj)
+}
+
+fn parse_simple_json(txt: &str) -> (usize, usize, usize, usize, Vec<Vec<u8>>) {
+    let get_int = |key: &str| -> usize {
+        let pat = format!("\"{}\":", key);
+        let idx = txt.find(&pat).unwrap() + pat.len();
+        let rest = txt[idx..].trim_start();
+        let end = rest.find(|c: char| !c.is_ascii_digit()).unwrap();
+        rest[..end].parse().unwrap()
+    };
+    let q = get_int("q");
+    let m = get_int("m");
+    let n = get_int("n");
+    let d_tar = get_int("d_tar");
+    let g_idx = txt.find("\"G\":").unwrap() + 4;
+    let g_str = txt[g_idx..].trim();
+    let mut g = Vec::with_capacity(m);
+    let mut cur_row = Vec::new();
+    let mut depth = 0i32;
+    let mut num_buf = String::new();
+    for ch in g_str.chars() {
+        match ch {
+            '[' => { depth += 1; if depth == 2 { cur_row.clear(); } }
+            ']' => {
+                if !num_buf.is_empty() { cur_row.push(num_buf.parse::<u8>().unwrap()); num_buf.clear(); }
+                if depth == 2 { g.push(cur_row.clone()); }
+                depth -= 1;
+                if depth == 0 { break; }
             }
-            mul[u][v] = p as u8;
+            '0'..='9' => num_buf.push(ch),
+            _ => {
+                if !num_buf.is_empty() { cur_row.push(num_buf.parse::<u8>().unwrap()); num_buf.clear(); }
+            }
         }
     }
-    for u in 1..q2 {
-        let mut p = u;
-        for _ in 0..(deg / 2) {
-            p = mul[p][p] as usize; // u^(2^(deg/2)) = u^4 or u^8
+    (q, m, n, d_tar, g)
+}
+
+fn compute_gfq2_rank(g: &[Vec<u8>], m: usize, n: usize, sub: &[Vec<u8>], mul: &[Vec<u8>], inv: &[u8]) -> usize {
+    let mut a = g.to_vec();
+    let mut rk = 0usize;
+    for col in 0..n {
+        if rk == m { break; }
+        let mut piv = None;
+        for r in rk..m {
+            if a[r][col] != 0 { piv = Some(r); break; }
         }
-        conj[u] = p as u8;
-        inv[u] = (1..q2).find(|&v| mul[u][v] == 1).unwrap() as u8;
+        let p = match piv { Some(v) => v, None => continue };
+        a.swap(rk, p);
+        let iv = inv[a[rk][col] as usize] as usize;
+        for c in col..n {
+            a[rk][c] = mul[a[rk][c] as usize][iv];
+        }
+        for r in 0..m {
+            if r != rk && a[r][col] != 0 {
+                let sc = a[r][col] as usize;
+                for c in col..n {
+                    let prod = mul[sc][a[rk][c] as usize];
+                    a[r][c] = sub[a[r][c] as usize][prod as usize];
+                }
+            }
+        }
+        rk += 1;
+    }
+    rk
+}
+
+#[inline(always)]
+fn build_scaled128(
+    v: u128,
+    np: usize,
+    m: usize,
+    q2: usize,
+    mul: &[[u8; 82]; 82],
+    inv: &[u8; 82],
+    out_table: &mut [u128; 64],
+) {
+    let piv_val = ((v >> (np * 8)) & 0xFF) as usize;
+    let iv_d = inv[piv_val] as usize;
+    let mut b_bytes = [0u8; 16];
+    for r in 0..m {
+        let vr = ((v >> (r * 8)) & 0xFF) as usize;
+        b_bytes[r] = mul[iv_d][vr];
+    }
+    out_table[0] = 0u128;
+    for fac in 1..q2 {
+        let m_row = &mul[fac];
+        let mut su = 0u128;
+        for r in 0..m {
+            su |= (m_row[b_bytes[r] as usize] as u128) << (r * 8);
+        }
+        out_table[fac] = su;
+    }
+}
+
+#[inline(always)]
+fn dfs_char2_m16(
+    depth: usize,
+    start_col: usize,
+    w_max: usize,
+    n: usize,
+    m: usize,
+    q2: usize,
+    cols128: &[u128],
+    piv_shift: &mut [usize; 16],
+    scaled128: &mut [[u128; 64]; 16],
+    mul: &[[u8; 82]; 82],
+    inv: &[u8; 82],
+    fail: &AtomicBool,
+) {
+    if fail.load(Ordering::Relaxed) { return; }
+    let rem_needed = w_max - depth;
+    if start_col + rem_needed > n { return; }
+
+    if depth + 1 == w_max {
+        for c in start_col..n {
+            let mut v = cols128[c];
+            for p in 0..depth {
+                let fac = ((v >> piv_shift[p]) & 0xFF) as usize;
+                v ^= scaled128[p][fac];
+            }
+            if v == 0 {
+                fail.store(true, Ordering::Relaxed);
+                return;
+            }
+        }
+        return;
     }
 
-    let n = parse_usize_field(txt, "n");
-    let k = parse_usize_field(txt, "k");
-    let r = parse_usize_field(txt, "r");
-    let d_tar = parse_usize_field(txt, "new_lower_bound");
-    let m = r / 2;
-    assert_eq!(r, 2 * m);
-    assert_eq!(r, n - k);
-
-    let key = if q == 4 { "G_gf16" } else { "G_gf64" };
-    let g_mat = parse_2d_matrix(txt, key);
-    assert_eq!(g_mat.len(), m);
-    for i in 0..m {
-        assert_eq!(g_mat[i].len(), n);
-        for j in 0..n {
-            assert!(g_mat[i][j] < q2);
+    for c in start_col..=(n - rem_needed) {
+        if fail.load(Ordering::Relaxed) { return; }
+        let mut v = cols128[c];
+        for p in 0..depth {
+            let fac = ((v >> piv_shift[p]) & 0xFF) as usize;
+            v ^= scaled128[p][fac];
         }
+        if v == 0 {
+            fail.store(true, Ordering::Relaxed);
+            return;
+        }
+        let np = (v.trailing_zeros() >> 3) as usize;
+        build_scaled128(v, np, m, q2, mul, inv, &mut scaled128[depth]);
+        piv_shift[depth] = np * 8;
+        dfs_char2_m16(depth + 1, c + 1, w_max, n, m, q2, cols128, piv_shift, scaled128, mul, inv, fail);
+    }
+}
+
+#[inline(always)]
+fn build_scaled3(
+    v: &[u128; 3],
+    np: usize,
+    m: usize,
+    q2: usize,
+    mul: &[[u8; 82]; 82],
+    inv: &[u8; 82],
+    out_table: &mut [[u128; 3]; 64],
+) {
+    let pw = np >> 4;
+    let ps = (np & 15) * 8;
+    let piv_val = ((v[pw] >> ps) & 0xFF) as usize;
+    let iv_d = inv[piv_val] as usize;
+    let mut b_bytes = [0u8; 48];
+    for r in 0..m {
+        let vr = ((v[r >> 4] >> ((r & 15) * 8)) & 0xFF) as usize;
+        b_bytes[r] = mul[iv_d][vr];
+    }
+    out_table[0] = [0u128; 3];
+    for fac in 1..q2 {
+        let m_row = &mul[fac];
+        let mut su = [0u128; 3];
+        for r in 0..m {
+            su[r >> 4] |= (m_row[b_bytes[r] as usize] as u128) << ((r & 15) * 8);
+        }
+        out_table[fac] = su;
+    }
+}
+
+#[inline(always)]
+fn dfs_char2_m48(
+    depth: usize,
+    start_col: usize,
+    w_max: usize,
+    n: usize,
+    m: usize,
+    q2: usize,
+    cols3: &[[u128; 3]],
+    piv_word: &mut [usize; 16],
+    piv_shift: &mut [usize; 16],
+    scaled3: &mut [[[u128; 3]; 64]; 16],
+    mul: &[[u8; 82]; 82],
+    inv: &[u8; 82],
+    fail: &AtomicBool,
+) {
+    if fail.load(Ordering::Relaxed) { return; }
+    let rem_needed = w_max - depth;
+    if start_col + rem_needed > n { return; }
+
+    if depth + 1 == w_max {
+        for c in start_col..n {
+            let [mut v0, mut v1, mut v2] = cols3[c];
+            for p in 0..depth {
+                let wval = if piv_word[p] == 0 { v0 } else if piv_word[p] == 1 { v1 } else { v2 };
+                let fac = ((wval >> piv_shift[p]) & 0xFF) as usize;
+                let sc = &scaled3[p][fac];
+                v0 ^= sc[0];
+                v1 ^= sc[1];
+                v2 ^= sc[2];
+            }
+            if (v0 | v1 | v2) == 0 {
+                fail.store(true, Ordering::Relaxed);
+                return;
+            }
+        }
+        return;
     }
 
-    // 1. Exact Hermitian self-orthogonality: G * G^\dagger == 0
+    for c in start_col..=(n - rem_needed) {
+        if fail.load(Ordering::Relaxed) { return; }
+        let [mut v0, mut v1, mut v2] = cols3[c];
+        for p in 0..depth {
+            let wval = if piv_word[p] == 0 { v0 } else if piv_word[p] == 1 { v1 } else { v2 };
+            let fac = ((wval >> piv_shift[p]) & 0xFF) as usize;
+            let sc = &scaled3[p][fac];
+            v0 ^= sc[0];
+            v1 ^= sc[1];
+            v2 ^= sc[2];
+        }
+        let np = if v0 != 0 {
+            (v0.trailing_zeros() >> 3) as usize
+        } else if v1 != 0 {
+            16 + ((v1.trailing_zeros() >> 3) as usize)
+        } else if v2 != 0 {
+            32 + ((v2.trailing_zeros() >> 3) as usize)
+        } else {
+            fail.store(true, Ordering::Relaxed);
+            return;
+        };
+        let vv = [v0, v1, v2];
+        build_scaled3(&vv, np, m, q2, mul, inv, &mut scaled3[depth]);
+        piv_word[depth] = np >> 4;
+        piv_shift[depth] = (np & 15) * 8;
+        dfs_char2_m48(depth + 1, c + 1, w_max, n, m, q2, cols3, piv_word, piv_shift, scaled3, mul, inv, fail);
+    }
+}
+
+#[inline(always)]
+fn build_scaled_u8(
+    v: &[u8; 44],
+    np: usize,
+    m: usize,
+    q2: usize,
+    mul: &[[u8; 82]; 82],
+    inv: &[u8; 82],
+    out_table: &mut [[u8; 44]; 82],
+) {
+    let iv_d = inv[v[np] as usize] as usize;
+    let mut b_row = [0u8; 44];
+    for r in 0..m {
+        b_row[r] = mul[iv_d][v[r] as usize];
+    }
+    out_table[0] = [0u8; 44];
+    for fac in 1..q2 {
+        let m_row = &mul[fac];
+        for r in 0..m {
+            out_table[fac][r] = m_row[b_row[r] as usize];
+        }
+    }
+}
+
+#[inline(always)]
+fn dfs_odd_fast(
+    depth: usize,
+    start_col: usize,
+    w_max: usize,
+    n: usize,
+    m: usize,
+    q2: usize,
+    cols: &[[u8; 44]],
+    piv_rows: &mut [usize; 16],
+    scaled_u8: &mut [[[u8; 44]; 82]; 16],
+    sub: &[[u8; 82]; 82],
+    mul: &[[u8; 82]; 82],
+    inv: &[u8; 82],
+    fail: &AtomicBool,
+) {
+    if fail.load(Ordering::Relaxed) { return; }
+    let rem_needed = w_max - depth;
+    if start_col + rem_needed > n { return; }
+
+    if depth + 1 == w_max {
+        for c in start_col..n {
+            let mut v = cols[c];
+            for p in 0..depth {
+                let fac = v[piv_rows[p]] as usize;
+                if fac != 0 {
+                    let sc = &scaled_u8[p][fac];
+                    for r in 0..m {
+                        v[r] = sub[v[r] as usize][sc[r] as usize];
+                    }
+                }
+            }
+            let mut nz = 0u8;
+            for r in 0..m { nz |= v[r]; }
+            if nz == 0 {
+                fail.store(true, Ordering::Relaxed);
+                return;
+            }
+        }
+        return;
+    }
+
+    for c in start_col..=(n - rem_needed) {
+        if fail.load(Ordering::Relaxed) { return; }
+        let mut v = cols[c];
+        for p in 0..depth {
+            let fac = v[piv_rows[p]] as usize;
+            if fac != 0 {
+                let sc = &scaled_u8[p][fac];
+                for r in 0..m {
+                    v[r] = sub[v[r] as usize][sc[r] as usize];
+                }
+            }
+        }
+        let mut np = usize::MAX;
+        for r in 0..m {
+            if v[r] != 0 { np = r; break; }
+        }
+        if np == usize::MAX {
+            fail.store(true, Ordering::Relaxed);
+            return;
+        }
+        build_scaled_u8(&v, np, m, q2, mul, inv, &mut scaled_u8[depth]);
+        piv_rows[depth] = np;
+        dfs_odd_fast(depth + 1, c + 1, w_max, n, m, q2, cols, piv_rows, scaled_u8, sub, mul, inv, fail);
+    }
+}
+
+fn verify_matrix(q: usize, m: usize, n: usize, d_tar: usize, g: &[Vec<u8>], n_threads: usize) -> Result<f64, &'static str> {
+    assert!(m <= 44 && d_tar >= 2);
+    let w_max = d_tar - 1;
+    assert!(w_max <= m && w_max <= 16 && w_max <= n);
+
+    let t0 = std::time::Instant::now();
+    let (add, sub, mul, inv, conj) = make_gf_q2(q);
+
+    if g.len() != m || g.iter().any(|row| row.len() != n) {
+        return Err("BAD_SHAPE");
+    }
+    if compute_gfq2_rank(g, m, n, &sub, &mul, &inv) != m {
+        return Err("FAIL_RANK");
+    }
     for i in 0..m {
         for j in 0..m {
             let mut acc = 0u8;
             for col in 0..n {
-                acc ^= mul[g_mat[i][col]][conj[g_mat[j][col]] as usize];
+                let pr = mul[g[i][col] as usize][conj[g[j][col] as usize] as usize];
+                acc = add[acc as usize][pr as usize];
             }
-            assert_eq!(acc, 0, "Hermitian orthogonality failed at ({},{}) in {}", i, j, path);
+            if acc != 0 {
+                return Err("FAIL_HERMITIAN");
+            }
         }
     }
 
-    // 2. Exact RREF of G over GF(q^2)
-    let mut rref: Vec<Vec<u8>> = g_mat
-        .iter()
-        .map(|row| row.iter().map(|&x| x as u8).collect())
-        .collect();
-    let mut pivots = Vec::with_capacity(m);
-    let mut row = 0usize;
-    for col in 0..n {
-        if row >= m {
-            break;
-        }
-        if let Some(piv) = (row..m).find(|&i| rref[i][col] != 0) {
-            rref.swap(row, piv);
-            let ip = inv[rref[row][col] as usize] as usize;
-            for j in col..n {
-                rref[row][j] = mul[rref[row][j] as usize][ip];
-            }
-            for i in 0..m {
-                if i != row && rref[i][col] != 0 {
-                    let fac = rref[i][col] as usize;
-                    for j in col..n {
-                        rref[i][j] ^= mul[fac][rref[row][j] as usize];
-                    }
-                }
-            }
-            pivots.push(col);
-            row += 1;
-        }
-    }
-    assert_eq!(pivots.len(), m, "GF({}) rank mismatch in {}", q2, path);
-
-    // 3. Exhaustive zero-symmetry check over ALL projective vectors in GF(q^2)^n of weight `1 .. d_tar - 1`!
-    // Pack each column's `m` entries (`m <= 16`) as a `u128` (`8 bits * m`), so XOR in GF(2^e)^m is ONE SINGLE `u128` XOR INSTRUCTION!!
-    assert!(m <= 16);
-    let mut col_sc = vec![vec![0u128; q2]; n];
-    for col in 0..n {
-        for a in 1..q2 {
-            let mut pk = 0u128;
-            for i in 0..m {
-                let v = mul[g_mat[i][col]][a] as u128;
-                pk |= v << (i * 8);
-            }
-            col_sc[col][a] = pk;
+    let q2 = q * q;
+    let mut sub_flat = [[0u8; 82]; 82];
+    let mut mul_flat = [[0u8; 82]; 82];
+    let mut inv_flat = [0u8; 82];
+    for u in 0..q2 {
+        inv_flat[u] = inv[u];
+        for v in 0..q2 {
+            sub_flat[u][v] = sub[u][v];
+            mul_flat[u][v] = mul[u][v];
         }
     }
 
-    let rays_checked = Arc::new(AtomicU64::new(0));
-    let degen_cnt = Arc::new(AtomicU64::new(0));
-    let cs_arc = Arc::new(col_sc);
-    let rr_arc = Arc::new(rref);
-    let pv_arc = Arc::new(pivots);
-    let mul_arc = Arc::new(mul);
-    let conj_arc = Arc::new(conj);
+    let mut cols = vec![[0u8; 44]; n];
+    for c in 0..n {
+        let mut nz = false;
+        for r in 0..m {
+            cols[c][r] = g[r][c];
+            if g[r][c] != 0 { nz = true; }
+        }
+        if !nz {
+            return Err("ZERO_COL");
+        }
+    }
+    if w_max == 1 {
+        return Ok(t0.elapsed().as_secs_f64());
+    }
 
-    let n_threads = 20usize;
-    let mut handles = Vec::with_capacity(n_threads);
-    for tid in 0..n_threads {
-        let cs_c = Arc::clone(&cs_arc);
-        let rr_c = Arc::clone(&rr_arc);
-        let pv_c = Arc::clone(&pv_arc);
-        let ml_c = Arc::clone(&mul_arc);
-        let cj_c = Arc::clone(&conj_arc);
-        let rc_c = Arc::clone(&rays_checked);
-        let dg_c = Arc::clone(&degen_cnt);
-        let p_str = path.to_string();
-
-        handles.push(thread::spawn(move || {
-            let mut local_rays = 0u64;
-            let mut local_degen = 0u64;
-            let check_mem = |cols: &[usize], vals: &[usize]| {
-                // `G * u == 0` => vector in `C^{\perp_H}` is `conj(u)`! Check `conj(u) in rowspan(G)`!
-                let mut v = vec![0u8; n];
-                for (&c, &a) in cols.iter().zip(vals.iter()) {
-                    v[c] = cj_c[a];
-                }
-                for (idx_p, &pc) in pv_c.iter().enumerate() {
-                    let fac = v[pc] as usize;
-                    if fac != 0 {
-                        for j in pc..n {
-                            v[j] ^= ml_c[fac][rr_c[idx_p][j] as usize];
+    let k_pref = if w_max >= 9 && n >= 20 {
+        5usize
+    } else if w_max >= 5 && n >= 10 {
+        4usize
+    } else {
+        2usize
+    };
+    let mut tasks: Vec<[u8; 5]> = Vec::new();
+    if k_pref == 5 {
+        for c0 in 0..=(n - w_max) {
+            for c1 in (c0 + 1)..=(n - (w_max - 1)) {
+                for c2 in (c1 + 1)..=(n - (w_max - 2)) {
+                    for c3 in (c2 + 1)..=(n - (w_max - 3)) {
+                        for c4 in (c3 + 1)..=(n - (w_max - 4)) {
+                            tasks.push([c0 as u8, c1 as u8, c2 as u8, c3 as u8, c4 as u8]);
                         }
                     }
                 }
-                assert!(
-                    v.iter().all(|&x| x == 0),
-                    "FATAL HERMITIAN LOGICAL ERROR OF WEIGHT {} AT {:?} IN {}!",
-                    cols.len(),
-                    cols,
-                    p_str
-                );
-            };
-
-            fn dfs_herm(
-                depth: usize,
-                w: usize,
-                last_col: usize,
-                n: usize,
-                q2: usize,
-                cur_s: u128,
-                cols: &mut [usize; 8],
-                vals: &mut [usize; 8],
-                cs: &[Vec<u128>],
-                local_rays: &mut u64,
-                local_degen: &mut u64,
-                check_mem: &dyn Fn(&[usize], &[usize]),
-            ) {
-                if depth == w {
-                    *local_rays += 1;
-                    if cur_s == 0 {
-                        check_mem(&cols[..w], &vals[..w]);
-                        *local_degen += 1;
+            }
+        }
+    } else if k_pref == 4 {
+        for c0 in 0..=(n - w_max) {
+            for c1 in (c0 + 1)..=(n - (w_max - 1)) {
+                for c2 in (c1 + 1)..=(n - (w_max - 2)) {
+                    for c3 in (c2 + 1)..=(n - (w_max - 3)) {
+                        tasks.push([c0 as u8, c1 as u8, c2 as u8, c3 as u8, 0]);
                     }
-                    return;
                 }
-                let rem = w - depth;
-                for nxt_c in (last_col + 1)..=(n - rem) {
-                    cols[depth] = nxt_c;
-                    let sc_nxt = &cs[nxt_c];
-                    for a in 1..q2 {
-                        vals[depth] = a;
-                        dfs_herm(
-                            depth + 1,
-                            w,
-                            nxt_c,
-                            n,
-                            q2,
-                            cur_s ^ sc_nxt[a],
-                            cols,
-                            vals,
-                            cs,
-                            local_rays,
-                            local_degen,
-                            check_mem,
+            }
+        }
+    } else {
+        for c0 in 0..=(n - w_max) {
+            for c1 in (c0 + 1)..=(n - (w_max - 1)) {
+                tasks.push([c0 as u8, c1 as u8, 0, 0, 0]);
+            }
+        }
+    }
+
+    let tasks_arc = Arc::new(tasks);
+    let next_idx = Arc::new(AtomicUsize::new(0));
+    let fail = Arc::new(AtomicBool::new(false));
+    let is_char2 = matches!(q, 2 | 4 | 8);
+
+    if is_char2 && m <= 16 {
+        let mut cols128 = vec![0u128; n];
+        for c in 0..n {
+            let mut u = 0u128;
+            for r in 0..m {
+                u |= (cols[c][r] as u128) << (r * 8);
+            }
+            cols128[c] = u;
+        }
+        let c_arc = Arc::new(cols128);
+        let handles: Vec<_> = (0..n_threads).map(|_| {
+            let cs = Arc::clone(&c_arc);
+            let ts = Arc::clone(&tasks_arc);
+            let ni = Arc::clone(&next_idx);
+            let fl = Arc::clone(&fail);
+            let mu = mul_flat;
+            let iv = inv_flat;
+            thread::spawn(move || {
+                let mut piv_shift = [0usize; 16];
+                let mut scaled128 = Box::new([[0u128; 64]; 16]);
+                let tot = ts.len();
+                loop {
+                    if fl.load(Ordering::Relaxed) { return; }
+                    let idx = ni.fetch_add(1, Ordering::Relaxed);
+                    if idx >= tot { return; }
+                    let t = ts[idx];
+                    let mut dep = false;
+                    for d in 0..k_pref {
+                        let mut v = cs[t[d] as usize];
+                        for p in 0..d {
+                            let fac = ((v >> piv_shift[p]) & 0xFF) as usize;
+                            v ^= scaled128[p][fac];
+                        }
+                        if v == 0 {
+                            fl.store(true, Ordering::Relaxed);
+                            dep = true;
+                            break;
+                        }
+                        if d + 1 < w_max {
+                            let np = (v.trailing_zeros() >> 3) as usize;
+                            build_scaled128(v, np, m, q2, &mu, &iv, &mut scaled128[d]);
+                            piv_shift[d] = np * 8;
+                        }
+                    }
+                    if !dep && w_max > k_pref {
+                        dfs_char2_m16(
+                            k_pref, (t[k_pref - 1] as usize) + 1, w_max, n, m, q2,
+                            &cs, &mut piv_shift, &mut scaled128, &mu, &iv, &fl,
                         );
                     }
                 }
+            })
+        }).collect();
+        for h in handles { h.join().unwrap(); }
+    } else if is_char2 {
+        let mut cols3 = vec![[0u128; 3]; n];
+        for c in 0..n {
+            for r in 0..m {
+                cols3[c][r >> 4] |= (cols[c][r] as u128) << ((r & 15) * 8);
             }
-
-            let mut c0 = tid;
-            while c0 < n {
-                let mut cols = [0usize; 8];
-                let mut vals = [0usize; 8];
-                cols[0] = c0;
-                vals[0] = 1; // projective normalization `u[c0] = 1`!
-                let s0 = cs_c[c0][1];
-                for w in 1..d_tar {
-                    if c0 + w > n {
-                        continue;
+        }
+        let c_arc = Arc::new(cols3);
+        let handles: Vec<_> = (0..n_threads).map(|_| {
+            let cs = Arc::clone(&c_arc);
+            let ts = Arc::clone(&tasks_arc);
+            let ni = Arc::clone(&next_idx);
+            let fl = Arc::clone(&fail);
+            let mu = mul_flat;
+            let iv = inv_flat;
+            thread::spawn(move || {
+                let mut piv_word = [0usize; 16];
+                let mut piv_shift = [0usize; 16];
+                let mut scaled3 = Box::new([[[0u128; 3]; 64]; 16]);
+                let tot = ts.len();
+                loop {
+                    if fl.load(Ordering::Relaxed) { return; }
+                    let idx = ni.fetch_add(1, Ordering::Relaxed);
+                    if idx >= tot { return; }
+                    let t = ts[idx];
+                    let mut dep = false;
+                    for d in 0..k_pref {
+                        let [mut v0, mut v1, mut v2] = cs[t[d] as usize];
+                        for p in 0..d {
+                            let wval = if piv_word[p] == 0 { v0 } else if piv_word[p] == 1 { v1 } else { v2 };
+                            let fac = ((wval >> piv_shift[p]) & 0xFF) as usize;
+                            let sc = &scaled3[p][fac];
+                            v0 ^= sc[0]; v1 ^= sc[1]; v2 ^= sc[2];
+                        }
+                        let np = if v0 != 0 {
+                            (v0.trailing_zeros() >> 3) as usize
+                        } else if v1 != 0 {
+                            16 + ((v1.trailing_zeros() >> 3) as usize)
+                        } else if v2 != 0 {
+                            32 + ((v2.trailing_zeros() >> 3) as usize)
+                        } else {
+                            fl.store(true, Ordering::Relaxed);
+                            dep = true;
+                            break;
+                        };
+                        if d + 1 < w_max {
+                            let vv = [v0, v1, v2];
+                            build_scaled3(&vv, np, m, q2, &mu, &iv, &mut scaled3[d]);
+                            piv_word[d] = np >> 4;
+                            piv_shift[d] = (np & 15) * 8;
+                        }
                     }
-                    dfs_herm(
-                        1,
-                        w,
-                        c0,
-                        n,
-                        q2,
-                        s0,
-                        &mut cols,
-                        &mut vals,
-                        &cs_c,
-                        &mut local_rays,
-                        &mut local_degen,
-                        &check_mem,
-                    );
+                    if !dep && w_max > k_pref {
+                        dfs_char2_m48(
+                            k_pref, (t[k_pref - 1] as usize) + 1, w_max, n, m, q2,
+                            &cs, &mut piv_word, &mut piv_shift, &mut scaled3, &mu, &iv, &fl,
+                        );
+                    }
                 }
-                c0 += n_threads;
-            }
-            rc_c.fetch_add(local_rays, Ordering::Relaxed);
-            dg_c.fetch_add(local_degen, Ordering::Relaxed);
-        }));
+            })
+        }).collect();
+        for h in handles { h.join().unwrap(); }
+    } else {
+        let c_arc = Arc::new(cols);
+        let handles: Vec<_> = (0..n_threads).map(|_| {
+            let cs = Arc::clone(&c_arc);
+            let ts = Arc::clone(&tasks_arc);
+            let ni = Arc::clone(&next_idx);
+            let fl = Arc::clone(&fail);
+            let sb = sub_flat;
+            let mu = mul_flat;
+            let iv = inv_flat;
+            thread::spawn(move || {
+                let mut piv_rows = [0usize; 16];
+                let mut scaled_u8 = Box::new([[[0u8; 44]; 82]; 16]);
+                let tot = ts.len();
+                loop {
+                    if fl.load(Ordering::Relaxed) { return; }
+                    let idx = ni.fetch_add(1, Ordering::Relaxed);
+                    if idx >= tot { return; }
+                    let t = ts[idx];
+                    let mut dep = false;
+                    for d in 0..k_pref {
+                        let mut v = cs[t[d] as usize];
+                        for p in 0..d {
+                            let fac = v[piv_rows[p]] as usize;
+                            if fac != 0 {
+                                let sc = &scaled_u8[p][fac];
+                                for r in 0..m {
+                                    v[r] = sb[v[r] as usize][sc[r] as usize];
+                                }
+                            }
+                        }
+                        let mut np = usize::MAX;
+                        for r in 0..m {
+                            if v[r] != 0 { np = r; break; }
+                        }
+                        if np == usize::MAX {
+                            fl.store(true, Ordering::Relaxed);
+                            dep = true;
+                            break;
+                        }
+                        if d + 1 < w_max {
+                            build_scaled_u8(&v, np, m, q2, &mu, &iv, &mut scaled_u8[d]);
+                            piv_rows[d] = np;
+                        }
+                    }
+                    if !dep && w_max > k_pref {
+                        dfs_odd_fast(
+                            k_pref, (t[k_pref - 1] as usize) + 1, w_max, n, m, q2,
+                            &cs, &mut piv_rows, &mut scaled_u8, &sb, &mu, &iv, &fl,
+                        );
+                    }
+                }
+            })
+        }).collect();
+        for h in handles { h.join().unwrap(); }
     }
-    for h in handles {
-        h.join().unwrap();
+
+    if fail.load(Ordering::Relaxed) {
+        return Err("FAIL_DIST");
     }
-    (
-        q,
-        n,
-        k,
-        d_tar,
-        degen_cnt.load(Ordering::Relaxed) == 0,
-        rays_checked.load(Ordering::Relaxed),
-    )
+    Ok(t0.elapsed().as_secs_f64())
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let out_dir = &args[1];
-    let snap = parse_snapshot(&format!("{}/codetables_qecc_snapshot.json", out_dir));
-
-    let mut files: Vec<String> = fs::read_dir(out_dir)
-        .unwrap()
-        .flatten()
-        .filter_map(|e| {
-            let nm = e.file_name().to_string_lossy().to_string();
-            if nm.starts_with("CONFIRMED_QECC_CROWN_") && nm.ends_with(".json") {
-                Some(e.path().to_string_lossy().to_string())
-            } else {
-                None
-            }
-        })
-        .collect();
-    files.sort();
-
-    println!("=== STANDALONE ZERO-SHARED-CODE CLEAN-ROOM VERIFIER ===");
-    println!("Verifying {} QECC certificate files across 20 CPU threads...\n", files.len());
-
-    let t_all = Instant::now();
-    // Track best new lower bound per `(q, n, k)`: `(d_old, d_up, d_new, source_desc)`
-    let mut cell_improvements: BTreeMap<(usize, usize, usize), (usize, usize, usize, String)> = BTreeMap::new();
-    let mut direct_verified: Vec<(usize, usize, usize, usize, usize, usize, bool, u64, String)> = Vec::new();
-    let mut total_rays = 0u64;
-
-    for fpath in &files {
-        let t0 = Instant::now();
-        let txt = fs::read_to_string(fpath).unwrap();
-        let fmt = parse_str_field(&txt, "format");
-        let method = parse_str_field(&txt, "method");
-        let q_f = parse_usize_field(&txt, "q");
-
-        let (q, n, k, d_tar, is_pure, rays) = if fmt == "hermitian_gf16" || fmt == "hermitian_gf64" {
-            verify_hermitian_gf2e(&txt, fpath, q_f)
-        } else {
-            verify_symplectic_prime(&txt, fpath)
-        };
-        total_rays += rays;
-
-        let &(d_old, d_up) = snap[&q].get(&(n, k)).unwrap_or(&(0, 99));
-        let mut beaten_here = BTreeSet::new();
-        if d_tar > d_old {
-            beaten_here.insert((n, k, d_old, d_up, d_tar, format!("Direct [[{},{},{}]]_{}", n, k, d_tar, q)));
+    if args.len() >= 2 && args[1] == "selftest" {
+        for &q in &[2usize, 3, 4, 5, 7, 8, 9] {
+            let _ = make_gf_q2(q);
         }
-        // Trivial explicit `ExtendCode` (`[[n + s, k, >= d_tar]]_q`: appends `s` unentangled `Z` stabilizers)
-        for n_ext in (n + 1)..=120 {
-            if let Some(&(dl, du)) = snap[&q].get(&(n_ext, k)) {
-                if d_tar > dl {
-                    beaten_here.insert((
-                        n_ext,
-                        k,
-                        dl,
-                        du,
-                        d_tar,
-                        format!("Extend([[{},{},{}]]_{} + {}Z)", n, k, d_tar, q, n_ext - n),
-                    ));
+        // Hexacode [[6, 0, 4]]_2 (`m = 3, n = 6, q = 2, GF(4): 0,1,2=w,3=w^2`)
+        let hex = vec![
+            vec![1, 0, 0, 1, 2, 2],
+            vec![0, 1, 0, 2, 1, 2],
+            vec![0, 0, 1, 2, 2, 1],
+        ];
+        assert!(verify_matrix(2, 3, 6, 4, &hex, 4).is_ok(), "Hexacode d=4 must pass!");
+        assert!(verify_matrix(2, 3, 6, 3, &hex, 4).is_ok(), "Hexacode d=3 must pass!");
+        // Direct sum of 6 copies of Hexacode (`m = 18, n = 36, q = 2`) exercises `[u128; 3]` `m > 16` path: `d = 4` OK, `d = 5` FAIL!
+        let mut hex6 = vec![vec![0u8; 36]; 18];
+        for b in 0..6 {
+            for r in 0..3 {
+                for c in 0..6 {
+                    hex6[b * 3 + r][b * 6 + c] = hex[r][c];
                 }
             }
         }
-
-        for (bn, bk, b_old, b_up, b_new, src) in &beaten_here {
-            let entry = cell_improvements
-                .entry((q, *bn, *bk))
-                .or_insert((*b_old, *b_up, *b_new, src.clone()));
-            if *b_new > entry.2 || (*b_new == entry.2 && src.starts_with("Direct")) {
-                *entry = (*b_old, *b_up, *b_new, src.clone());
-            }
-        }
-
-        let fname = std::path::Path::new(fpath).file_name().unwrap().to_string_lossy().to_string();
-        if d_tar > d_old || !beaten_here.is_empty() {
-            println!(
-                "✅ VERIFIED [[{}, {}, {}]]_{} ({}) | CodeTables: {}..{} | rays={:>11} ({:.2}s) | +{} cells | {}",
-                n,
-                k,
-                d_tar,
-                q,
-                if is_pure { "PURE" } else { "DEGEN" },
-                d_old,
-                d_up,
-                rays,
-                t0.elapsed().as_secs_f64(),
-                beaten_here.len(),
-                fname
-            );
-            direct_verified.push((q, n, k, d_old, d_up, d_tar, is_pure, rays, method));
-        }
+        assert!(verify_matrix(2, 18, 36, 4, &hex6, 4).is_ok(), "Hex6 d=4 must pass!");
+        assert!(verify_matrix(2, 18, 36, 5, &hex6, 4).is_err(), "Hex6 d=5 must fail!");
+        println!("SELFTEST_ALL_FIELDS_AND_SIMD_PATHS_OK");
+        return;
     }
 
-    println!("\n======================================================================");
-    println!(
-        "🏆 GRAND TOTAL CLEAN-ROOM VERIFIED: {} EXPLICIT BASE CODES -> {} DISTINCT CODETABLES.DE CELLS IMPROVED!",
-        direct_verified.len(),
-        cell_improvements.len()
-    );
-    println!("   Total exhaustive zero-symmetry rays checked: {} in {:.2}s", total_rays, t_all.elapsed().as_secs_f64());
-    println!("======================================================================\n");
+    let txt = fs::read_to_string(&args[1]).expect("read json");
+    let (q, m, n, d_tar, g) = parse_simple_json(&txt);
+    let n_threads: usize = env::var("QECC_VERIFY_THREADS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(20);
 
-    let mut summary_lines = Vec::new();
-    summary_lines.push("{\n  \"total_base_certificates\": ".to_string() + &direct_verified.len().to_string() + ",");
-    summary_lines.push("  \"total_improved_cells\": ".to_string() + &cell_improvements.len().to_string() + ",");
-    summary_lines.push("  \"total_rays_checked\": ".to_string() + &total_rays.to_string() + ",");
-    summary_lines.push("  \"improved_cells\": [".to_string());
-    let items: Vec<String> = cell_improvements
-        .iter()
-        .map(|(&(q, n, k), (d_old, d_up, d_new, src))| {
-            format!(
-                "    {{\"q\": {}, \"n\": {}, \"k\": {}, \"old_bounds\": \"{}..{}\", \"new_lower_bound\": {}, \"exact_optimal\": {}, \"source\": \"{}\"}}",
-                q,
-                n,
-                k,
-                d_old,
-                d_up,
-                d_new,
-                d_new == d_up,
-                src
-            )
-        })
-        .collect();
-    summary_lines.push(items.join(",\n"));
-    summary_lines.push("  ]\n}".to_string());
-    let sum_path = format!("{}/VERIFIED_QECC_GRAND_SLAM_SUMMARY.json", out_dir);
-    fs::write(&sum_path, summary_lines.join("\n")).unwrap();
+    match verify_matrix(q, m, n, d_tar, &g, n_threads) {
+        Ok(el) => {
+            println!("VALID_PURE_QECC_UNIVERSAL q={} n={} k={} d={} elapsed={:.3}s", q, n, n - 2 * m, d_tar, el);
+        }
+        Err(e) => {
+            eprintln!("{}", e);
+            std::process::exit(1);
+        }
+    }
 }

@@ -1,226 +1,1042 @@
 \documentclass[11pt,a4paper]{article}
-\usepackage[margin=2.2cm]{geometry}
-\usepackage{amsmath,amssymb,amsthm}
-\usepackage{booktabs}
-\usepackage{array}
-\usepackage{hyperref}
+\usepackage[margin=2.0cm]{geometry}
+\usepackage{iftex}
+\usepackage{amsmath,amsthm,mathtools}
+\ifTUTeX
+  \usepackage{unicode-math}
+  \newcommand{\vb}[1]{\symbf{#1}}
+  \AtBeginDocument{\renewcommand{\setminus}{\smallsetminus}}
+\else
+  \usepackage[T1]{fontenc}
+  \usepackage{lmodern}
+  \usepackage{amssymb}
+  \newcommand{\vb}[1]{\mathbf{#1}}
+\fi
+\usepackage{booktabs,longtable,array}
 \usepackage{xcolor}
+\usepackage{hyperref}
 
 \hypersetup{
   colorlinks=true,
   linkcolor=blue!60!black,
   citecolor=blue!60!black,
   urlcolor=blue!60!black,
-  pdftitle={Twenty-Nine Improved Minimum-Distance Bounds for Quantum Error-Correcting Codes via Constacyclic and Bordered Hermitian Constructions},
+  pdftitle={Sixteen Hundred Fifty-Four Improved Minimum-Distance Bounds and Eighteen Exact-Optimal Closures for Quantum Stabilizer Codes over GF(q)},
   pdfauthor={Katsutoshi Hashimoto}
 }
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{corollary}[theorem]{Corollary}
 \theoremstyle{remark}
 \newtheorem{remark}[theorem]{Remark}
 
-\title{\textbf{Twenty-Nine Improved Minimum-Distance Bounds for Quantum Error-Correcting Codes via Constacyclic and Bordered Hermitian Constructions}}
+\title{\textbf{Sixteen Hundred Fifty-Four Improved Minimum-Distance Bounds and Eighteen Exact-Optimal Closures for Quantum Stabilizer Codes over \texorpdfstring{$\mathbb{F}_q$ ($q \in \{2, 3, 4, 5, 7, 8\}$)}{GF(q) (q in 2, 3, 4, 5, 7, 8)}}}
 
 \author{Katsutoshi Hashimoto\\
 \small Independent Researcher, Japan\\
 \small ORCID: \href{https://orcid.org/0009-0009-8292-5085}{0009-0009-8292-5085} \quad $\cdot$ \quad \texttt{ramuza0113@gmail.com}}
 
-\date{November 25, 2026 \quad (\texttt{v1.1.0})}
+\date{November 28, 2026 \quad (\texttt{v1.2.0})}
 
 \begin{document}
 \sloppy
 \maketitle
 
 \begin{abstract}
-Using a Meet-in-the-Middle norm-matching construction in the $\lambda$-constacyclic algebra $\mathbb{F}_{q^2}[x]/(x^m - \lambda)$ ($\lambda^{q+1} = 1$) combined with GPU-accelerated forced-pivot minimum-weight screening, we construct eighteen explicit Hermitian self-orthogonal $[n, m]_{q^2}$ linear codes whose Hermitian duals achieve minimum Hamming weight $d(C^{\perp_H}) \ge d_{\mathrm{new}}$. By the Hermitian stabilizer construction of Ashikhmin--Knill and Ketkar \emph{et al.}, these yield eighteen pure $q$-ary quantum error-correcting codes across $q \in \{2, 3, 4, 5, 7\}$, including seven new distance-$7$ codes:
-$[[33, 11, 7]]_2$, $[[34, 12, 7]]_2$, $[[36, 26, 4]]_2$, $[[49, 33, 5]]_2$, $[[20, 10, 5]]_3$, $[[18, 6, 6]]_4$, $[[19, 7, 6]]_4$, $[[20, 10, 5]]_4$, $[[24, 8, 7]]_4$, $[[25, 9, 7]]_4$, $[[25, 15, 5]]_4$, $[[26, 16, 5]]_4$, $[[19, 7, 6]]_5$, $[[24, 12, 6]]_5$, $[[32, 16, 7]]_5$, $[[33, 17, 7]]_5$, $[[21, 7, 7]]_7$, and $[[22, 8, 7]]_7$.
-Together with trivial stabilizer extension and pure subcode propagation, these constructions strictly improve \textbf{twenty-nine} minimum-distance lower bounds in Grassl's online tables (\texttt{CodeTables.de}), closing \textbf{five} previously open entries ($[[36, 26, 4]]_2$, $[[37, 26, 4]]_2$, $[[20, 10, 5]]_3$, $[[25, 15, 5]]_4$, and $[[26, 16, 5]]_4$) to exact optimality. Every code is specified completely in closed polynomial form and verified from first principles by standalone zero-symmetry verifiers in Python, Rust, and Magma.
+We present a unified algebraic, geometric, and GPU-accelerated framework for constructing pure $q$-ary quantum error-correcting stabilizer codes across prime and prime-power alphabets $q \in \{2, 3, 4, 5, 7, 8\}$. Combining four complementary constructions---(i)~comb-free multi-eigenmode Vandermonde bordered $\lambda$-constacyclic Hermitian codes diagonalized via the discrete Fourier transform over $\mathbb{F}_{q^2}$, (ii)~equivariant $\mathbb{F}_q$-linear symplectic stabilizer codes accommodating both odd and even stabilizer ranks $r_S = n - k$, (iii)~symmetry-free navigation of the Hermitian isotropic Grassmannian via Dieudonn\'e--Witt rank-$1$ unitary Householder reflections, and (iv)~Frobenius-conjugated $2$-block and $3$-block non-singular-by-columns (NSC) quasi-unitary matrix-product codes over projective generalized Reed--Solomon components---we construct \textbf{397 explicit pure parent stabilizer codes} spanning block lengths $11 \le n \le 100$ and pure minimum distances $4 \le d \le 16$ (including 116 direct $\Delta d = +2$ leaps and 20 odd-$r_S$ symplectic codes). Under strictly pure secondary propagation ($\mathrm{PureSubcode}$, $\mathrm{Puncture}$, $\mathrm{Shorten}$ only, without ancilla extension), these codes strictly improve \textbf{1,450} minimum-distance lower bounds in Grassl's online reference database (\texttt{CodeTables.de}) as pure stabilizer codes, closing \textbf{16} entries to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$). Appending terminal weight-$1$ stabilizer extension ($\mathrm{Extend}$) reaches $+204$ additional improved entries ($+2$ exact-optimal closures), for a total of \textbf{1,575} improved entries under single-operator propagation and \textbf{1,654} improved entries (\textbf{18} exact-optimal closures, including two new non-GRS Quantum MDS codes $[[11,1,6]]_5$ and self-dual $[[12,0,7]]_5$) under full purity-respecting transitive closure. Every parent code is accompanied by a cryptographic SHA-256 certificate and verified from first principles without symmetry assumptions via standalone clean-room verifiers in Python, multi-threaded Rust, and Magma.
 \end{abstract}
 
 \section{Introduction}
 
-Let $\mathbb{F}_q$ be the finite field with $q$ elements ($q$ a prime power). An $[[n, k, d]]_q$ quantum stabilizer code encodes $k$ logical $q$-ary qudits into $n$ physical qudits and corrects any error affecting at most $\lfloor (d-1)/2 \rfloor$ qudits (or detects up to $d-1$ errors)~\cite{Calderbank1998,Ashikhmin2001,Ketkar2006}. Determining the largest achievable minimum distance $d$ for given $(q, n, k)$ is a central problem in quantum coding theory; the current state of knowledge is maintained by Grassl in the reference database \texttt{CodeTables.de}~\cite{Grassl2007}.
+Let $\mathbb{F}_q$ denote the finite field with $q = p^e$ elements ($p$ prime). A $q$-ary quantum stabilizer code with parameters $[[n, k, d]]_q$ is a $q^k$-dimensional subspace of the $n$-qudit Hilbert space $(\mathbb{C}^q)^{\otimes n}$, specified as the joint eigenspace of an abelian subgroup of the $n$-qudit Pauli--Heisenberg--Weyl group, that detects arbitrary errors on up to $d - 1$ qudits and corrects arbitrary errors on up to $\lfloor (d - 1)/2 \rfloor$ qudits~\cite{Calderbank1998,Rains1999,Ashikhmin2001,Ketkar2006}. A central problem in quantum coding theory is to determine, for each alphabet $q$, block length $n$, and logical dimension $k$, the largest achievable minimum distance $d$; current lower and upper bounds are maintained by Grassl at \texttt{CodeTables.de}~\cite{Grassl2007} for $q = 2$ ($n \le 256$) and $q \in \{3, 4, 5, 7, 8, 9\}$ ($n \le 100$).
 
-By the \emph{Hermitian construction}~\cite{Ashikhmin2001,Ketkar2006}, let $\mathbb{F}_{q^2}$ carry the Frobenius involution $\overline{u} = u^q$ and the Hermitian inner product $\langle \mathbf{u}, \mathbf{v} \rangle_H = \sum_{j=0}^{n-1} u_j v_j^q \in \mathbb{F}_{q^2}$. If $C \subseteq \mathbb{F}_{q^2}^n$ is an $\mathbb{F}_{q^2}$-linear $[n, m]_{q^2}$ code that is \emph{Hermitian self-orthogonal} ($C \subseteq C^{\perp_H}$) with $d(C^{\perp_H}) \ge d_{\mathrm{new}}$, then there exists a \emph{pure} $[[n, n - 2m, \ge d_{\mathrm{new}}]]_q$ stabilizer code~\cite[Corollary~19]{Ketkar2006}.
+By the stabilizer formalism over finite fields~\cite{Ashikhmin2001,Ketkar2006}, any $\mathbb{F}_q$-linear $[2n, r_S]_q$ code $C_S \subseteq \mathbb{F}_q^{2n}$ ($r_S = n - k$) generated by $[X \mid Z] \in \mathbb{F}_q^{r_S \times 2n}$ that is self-orthogonal with respect to the $\mathbb{F}_q$-symplectic inner product,
+\begin{equation}\label{eq:symp_ortho}
+  X Z^\top - Z X^\top = \vb{0} \quad \text{over } \mathbb{F}_q,
+\end{equation}
+defines an $[[n, n - r_S, d]]_q$ stabilizer code~\cite[Lemma~16 \& Corollary~19]{Ketkar2006}. Moreover, the stabilizer code is \emph{pure} of minimum distance at least $d$ whenever every nonzero vector $(\vb{u}, \vb{v}) \in C_S^{\perp_s} \setminus \{\vb{0}\}$ has symplectic weight $\mathrm{wt}_s(\vb{u}, \vb{v}) = |\{j : (u_j, v_j) \ne (0, 0)\}| \ge d$. When $r_S = 2m$ is even, equipping $\mathbb{F}_{q^2}$ with the Frobenius involution $u \mapsto u^q$ and Hermitian inner product $\langle \vb{u}, \vb{v} \rangle_H = \sum_{j=0}^{n-1} u_j v_j^q$ yields the \emph{Hermitian construction}~\cite{Ashikhmin2001,Ketkar2006}: an $\mathbb{F}_{q^2}$-linear $[n, m]_{q^2}$ code $C$ with generator matrix $G \in \mathbb{F}_{q^2}^{m \times n}$ satisfying $G G^\dagger = \vb{0}$ and $d(C^{\perp_H}) \ge d$ defines a pure $[[n, n - 2m, \ge d]]_q$ stabilizer code.
 
-Extending our initial report (\texttt{v1.0.0}, ten codes / sixteen entries), we incorporate norm-$1$ $\lambda$-constacyclic multipliers ($\lambda^{q+1} = 1$) and general $\beta$-borders ($\beta \in \mathbb{F}_{q^2}^\times$), obtaining eight additional explicit pure quantum codes (seven of distance $d = 7$, including binary qubit codes $[[33, 11, 7]]_2$ and $[[34, 12, 7]]_2$). In total, these eighteen explicit codes improve twenty-nine entries in \texttt{CodeTables.de}.
-
-\section{Constacyclic and Bordered Hermitian Self-Orthogonality}
-
-Fix a block size $m \ge 3$ and a norm-$1$ scalar $\lambda \in \mathbb{F}_{q^2}^\times$ satisfying $\lambda \overline{\lambda} = \lambda^{q+1} = 1$, and let $R_{m,\lambda} = \mathbb{F}_{q^2}[x]/(x^m - \lambda)$. With each polynomial $a(x) = \sum_{t=0}^{m-1} a_t x^t \in R_{m,\lambda}$ we associate the $m \times m$ $\lambda$-constacyclic matrix $M_\lambda(a)$ whose $(r, c)$ entry ($0 \le r, c < m$) is $a_{r - c}$ for $r \ge c$ and $\lambda a_{m + r - c}$ for $r < c$ (so column $0$ is $(a_0, a_1, \dots, a_{m-1})^\top$). Since $\overline{\lambda} = \lambda^{-1}$, defining the involution
-\[
-  a^\dagger(x) = a_0^q + \overline{\lambda} \sum_{t=1}^{m-1} a_{m-t}^q x^t \in R_{m,\lambda}
-\]
-ensures $M_\lambda(a)^\dagger = \overline{M_\lambda(a)}^\top = M_\lambda(a^\dagger)$ and $M_\lambda(a) M_\lambda(b) = M_\lambda(a b \bmod (x^m - \lambda))$.
-
-\begin{proposition}[Quasi-Twisted and Bordered Hermitian Construction]\label{prop:hermitian}
-Let $\ell \ge 3$, let $a_1(x), \dots, a_{\ell-1}(x) \in R_{m,\lambda}$ with $\lambda^{q+1} = 1$, and let $\mathbf{1}_m = (1, \dots, 1)^\top \in \mathbb{F}_{q^2}^m$.
+In earlier releases of this study (\texttt{v1.0.0} and \texttt{v1.1.0}), $\lambda$-constacyclic and $1$-column bordered Hermitian codes yielded $18$ explicit pure stabilizer codes improving $29$ bounds in \texttt{CodeTables.de} (closing $5$ entries to $d_{\mathrm{low}} = d_{\mathrm{up}}$). Scaling to the entire parameter space exposed four structural barriers in standard algebraic searches:
 \begin{enumerate}
-  \item \emph{(Unbordered, $n = \ell m$):} The $m \times \ell m$ matrix $G = [I_m \mid M_\lambda(a_1) \mid \cdots \mid M_\lambda(a_{\ell-1})]$ has rank $m$ over $\mathbb{F}_{q^2}$ and satisfies $G G^\dagger = \mathbf{0}$ if and only if
-  \begin{equation}\label{eq:unbordered}
-    \sum_{i=1}^{\ell-1} a_i(x)\, a_i^\dagger(x) \equiv -1 \pmod{x^m - \lambda}.
-  \end{equation}
-  \item \emph{(Bordered at $\lambda = 1$, $n = \ell m + 1$):} For $\lambda = 1$ and $\beta \in \mathbb{F}_{q^2}^\times$, the $m \times (\ell m + 1)$ matrix $G_{\mathrm{bord}} = [I_m \mid M_1(a_1) \mid \cdots \mid M_1(a_{\ell-1}) \mid \beta \mathbf{1}_m]$ has rank $m$ and satisfies $G_{\mathrm{bord}} G_{\mathrm{bord}}^\dagger = \mathbf{0}$ if and only if
-  \begin{equation}\label{eq:bordered}
-    \sum_{i=1}^{\ell-1} a_i(x)\, a_i^\dagger(x) \equiv -1 - \beta^{q+1} \sum_{t=0}^{m-1} x^t \pmod{x^m - 1}.
-  \end{equation}
+  \item \emph{Residue-class gaps ($n \equiv 0, 1 \pmod m$):} Unbordered and $1$-bordered quasi-twisted (QT) codes miss all lengths $n = \ell m + b_p$ with $2 \le b_p \le m - 1$, whereas naive multi-column borders create low-weight ``comb'' codewords supported entirely inside the border.
+  \item \emph{Even-parity lock ($n - k = 2m$):} $\mathbb{F}_{q^2}$-linear Hermitian codes force $r_S = n - k$ to be even, leaving odd-$r_S$ entries (such as $[[21,14,4]]_4$ at $r_S = 7$ or $[[46,11,13]]_8$ at $r_S = 35$) inaccessible to direct Hermitian constructions.
+  \item \emph{Automorphism obstructions near the Quantum Singleton Bound ($n \le 15$):} Imposing cyclic, constacyclic, or monomial symmetries on short codes frequently forces $d(C^{\perp_H}) \le d^\star - 1$, blocking Quantum MDS (QMDS) parameters $n - k = 2d - 2$~\cite{Rains1999,Ball2021} beyond classical GRS lengths.
+  \item \emph{Combinatorial syndrome blow-up at large distance ($d \in [10, 16]$):} Direct minimum-weight verification scales as $\binom{n}{d-1}$, becoming intractable for unstructured codes once $n \ge 50$ and $d \ge 11$.
 \end{enumerate}
-\end{proposition}
 
-\begin{proof}
-Since $G$ begins with $I_m$, $\mathrm{rank}_{\mathbb{F}_{q^2}}(G) = m$. For~(1), $G G^\dagger = M_\lambda\bigl(1 + \sum_{i=1}^{\ell-1} a_i a_i^\dagger\bigr) = \mathbf{0}$ iff~\eqref{eq:unbordered} holds. For~(2), $(\beta \mathbf{1}_m)(\beta \mathbf{1}_m)^\dagger = \beta^{q+1} J_m = M_1\bigl(\beta^{q+1} \sum_{t=0}^{m-1} x^t\bigr)$, giving~\eqref{eq:bordered}.
-\end{proof}
-
-Because $N_\lambda(a) = a(x) a^\dagger(x) \bmod (x^m - \lambda)$ satisfies $N_\lambda(a)^\dagger = N_\lambda(a)$, its values lie in an $\mathbb{F}_q$-subspace of size only $q^m$ inside $R_{m,\lambda}$ (of size $q^{2m}$). Hash-table norm matching therefore generates exact Hermitian self-orthogonal tuples in $O(1)$ amortized time, which are screened on an NVIDIA GeForce RTX 3090 GPU via cyclic anchor reduction and forced-pivot column cancellation ($d_{\mathrm{new}} \le 7$).
-
-\section{Summary of 29 Improved Bounds and Explicit Defining Vectors}
-
-Table~\ref{tab:bounds} lists all twenty-nine entries of \texttt{CodeTables.de}~\cite{Grassl2007} improved by our eighteen explicit pure codes together with standard extension ($\mathrm{Extend}$: $[[n, k, d]]_q \Rightarrow [[n+1, k, \ge d]]_q$) and pure subcode ($\mathrm{PureSubcode}$: pure $[[n, k, d]]_q \Rightarrow [[n, k-1, \ge d]]_q$) propagation~\cite{Calderbank1998,Ketkar2006}.
+Section~\ref{sec:constructions} establishes four algebraic-geometric theorems overcoming each barrier in turn. Section~\ref{sec:results} presents all $18$ exact-optimal closures ($d_{\mathrm{low}} = d_{\mathrm{up}}$), complete generator matrices and $64$-character SHA-256 digests for all $15$ direct exact-optimal parent codes, and milestone high-distance records; Appendix~\ref{app:catalog} catalogs all $397$ pure parent certificates. Section~\ref{sec:verification} details the exact distinction between strictly pure propagation ($1{,}450$ cells) and terminal ancilla extension ($+204$ cells $= 1{,}654$ total), alongside our standalone clean-room verification suite.
 
 \begin{table}[htbp]
 \centering
-\caption{Twenty-nine improved minimum-distance bounds for $[[n, k, d]]_q$ quantum codes compared with \texttt{CodeTables.de} (verified live November 25, 2026). Entries marked $\star$ close the entry to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$).}\label{tab:bounds}
-\vspace{3pt}
-\footnotesize
-\begin{tabular}{@{}cccccl@{}}
+\caption{Per-alphabet summary of the $397$ pure parent stabilizer certificates and improved \texttt{CodeTables.de} lower bounds (verified against the November 2026 database snapshot). ``1-Op'' counts single-step improvements; ``Pure Closure'' counts strictly pure transitive derivations ($\mathrm{PureSubcode}$, $\mathrm{Puncture}$, $\mathrm{Shorten}$ only, zero $\mathrm{Extend}$); ``Full Closure'' adds terminal weight-$1$ $\mathrm{Extend}$ ($+204$ new cells). Under ``Exact Opt.'', parentheses indicate how many closures are strictly pure ($16$P of $18$).}\label{tab:summary_by_q}
+\vspace{4pt}
+{\footnotesize\setlength{\tabcolsep}{4.4pt}\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}ccccccccccc@{}}
 \toprule
-$q$ & Parameters $[[n, k]]_q$ & \texttt{CodeTables.de} & \textbf{New Bound} & Optimal & Construction / Derivation \\
+$q$ & Parents & Herm. & Symp. & MP2/3 & $d_{\mathrm{new}}$ & $\max \Delta d$ & 1-Op & Pure Closure & \textbf{Full Closure} & \textbf{Exact Opt.} \\
 \midrule
-$2$ & $[[33, 11]]_2$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Unbordered ($m=11, \ell=3$) \\
-$2$ & $[[34, 11]]_2$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & & $\mathrm{Extend}([[33, 11, 7]]_2, +1)$ \\
-$2$ & $[[34, 12]]_2$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Bordered ($m=11, \ell=3, \beta=1$) \\
-$2$ & $[[36, 26]]_2$ & $3\text{--}4$ & $\mathbf{4}$ & $\star$ & Direct Bordered ($m=5, \ell=7, \beta=1$) \\
-$2$ & $[[37, 26]]_2$ & $3\text{--}4$ & $\mathbf{4}$ & $\star$ & $\mathrm{Extend}([[36, 26, 4]]_2, +1)$ \\
-$2$ & $[[49, 33]]_2$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & Direct Bordered ($m=8, \ell=6, \beta=1$) \\
+$2$ & $8$ & $8$ & $0$ & $0$ & $4\text{--}8$ & $+1$ & $10$ & $9$ & $\mathbf{10}$ & $\mathbf{2}$ ($1$P) \\
+$3$ & $5$ & $5$ & $0$ & $0$ & $5\text{--}9$ & $+1$ & $7$ & $5$ & $\mathbf{7}$ & $\mathbf{2}$ \\
+$4$ & $29$ & $25$ & $4$ & $0$ & $4\text{--}9$ & $+1$ & $52$ & $43$ & $\mathbf{52}$ & $\mathbf{11}$ ($10$P) \\
+$5$ & $42$ & $19$ & $11$ & $12$ & $6\text{--}12$ & $+1$ & $90$ & $73$ & $\mathbf{93}$ & $\mathbf{2}$ \\
+$7$ & $98$ & $8$ & $1$ & $89$ & $7\text{--}16$ & $+2$ & $421$ & $379$ & $\mathbf{449}$ & $\mathbf{0}$ \\
+$8$ & $215$ & $14$ & $15$ & $186$ & $6\text{--}16$ & $+2$ & $995$ & $941$ & $\mathbf{1{,}043}$ & $\mathbf{1}$ \\
 \midrule
-$3$ & $[[20, 10]]_3$ & $4\text{--}5$ & $\mathbf{5}$ & $\star$ & Direct Unbordered ($m=5, \ell=4$) \\
-\midrule
-$4$ & $[[18, 6]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Unbordered ($m=6, \ell=3$) \\
-$4$ & $[[19, 6]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & $\mathrm{Extend}([[18, 6, 6]]_4, +1)$ \\
-$4$ & $[[19, 7]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Bordered ($m=6, \ell=3, \beta=1$) \\
-$4$ & $[[20, 7]]_4$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & $\mathrm{Extend}([[19, 7, 6]]_4, +1)$ \\
-$4$ & $[[20, 10]]_4$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & Direct Unbordered ($m=5, \ell=4$) \\
-$4$ & $[[24, 8]]_4$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Unbordered ($m=8, \ell=3$) \\
-$4$ & $[[25, 8]]_4$  & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & & $\mathrm{Extend}([[24, 8, 7]]_4, +1)$ \\
-$4$ & $[[25, 9]]_4$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Bordered ($m=8, \ell=3, \beta=1$) \\
-$4$ & $[[25, 14]]_4$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & $\mathrm{PureSubcode}([[25, 15, 5]]_4, -1)$ \\
-$4$ & $[[25, 15]]_4$ & $4\text{--}5$ & $\mathbf{5}$ & $\star$ & Direct Unbordered ($m=5, \ell=5$) \\
-$4$ & $[[26, 9]]_4$  & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & & $\mathrm{Extend}([[25, 9, 7]]_4, +1)$ \\
-$4$ & $[[26, 16]]_4$ & $4\text{--}5$ & $\mathbf{5}$ & $\star$ & Direct Bordered ($m=5, \ell=5, \beta=1$) \\
-$4$ & $[[27, 16]]_4$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & & $\mathrm{Extend}([[26, 16, 5]]_4, +1)$ \\
-\midrule
-$5$ & $[[19, 7]]_5$  & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Bordered ($m=6, \ell=3, \beta=1$) \\
-$5$ & $[[24, 12]]_5$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & Direct Unbordered ($m=6, \ell=4$) \\
-$5$ & $[[25, 12]]_5$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & & $\mathrm{Extend}([[24, 12, 6]]_5, +1)$ \\
-$5$ & $[[32, 16]]_5$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & & Direct Constacyclic ($m=8, \ell=4, \lambda=12$) \\
-$5$ & $[[33, 17]]_5$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Bordered ($m=8, \ell=4, \beta=7$) \\
-\midrule
-$7$ & $[[21, 7]]_7$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Unbordered ($m=7, \ell=3$) \\
-$7$ & $[[22, 7]]_7$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & $\mathrm{Extend}([[21, 7, 7]]_7, +1)$ \\
-$7$ & $[[22, 8]]_7$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & Direct Bordered ($m=7, \ell=3, \beta=1$) \\
-$7$ & $[[23, 8]]_7$  & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & & $\mathrm{Extend}([[22, 8, 7]]_7, +1)$ \\
+\textbf{Total} & $\mathbf{397}$ & $79$ & $31$ & $287$ & $4\text{--}16$ & $+2$ & $\mathbf{1{,}575}$ & $\mathbf{1{,}450}$ & $\mathbf{1{,}654}$ & $\mathbf{18}$ ($16$P) \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
-\subsection{Field Encodings and Complete Defining Vectors for All 18 Codes}
+\section{Algebraic and Geometric Constructions}\label{sec:constructions}
 
-We fix integer encodings $u \in \{0, \dots, q^2 - 1\}$ of $\mathbb{F}_{q^2}$ as follows:
-\begin{itemize}
-  \item $q = 2$: $\mathbb{F}_4 = \mathbb{F}_2[\omega]/(\omega^2 + \omega + 1)$, $u = c_0 + 2 c_1$ ($c_0, c_1 \in \{0, 1\}$).
-  \item $q \in \{3, 5\}$: $\mathbb{F}_{q^2} = \mathbb{F}_q[\theta]/(\theta^2 - 2)$, $u = x + q y$ ($x, y \in \{0, \dots, q-1\}$), $\theta^q = -\theta$.
-  \item $q = 4$: $\mathbb{F}_{16} = \mathbb{F}_2[z]/(z^4 + z + 1)$, $u = \sum_{j=0}^{3} c_j 2^j$ ($c_j \in \{0, 1\}$), $\overline{u} = u^4$.
-  \item $q = 7$: $\mathbb{F}_{49} = \mathbb{F}_7[\theta]/(\theta^2 - 3)$, $u = x + 7 y$ ($x, y \in \{0, \dots, 6\}$), $\theta^7 = -\theta$.
-\end{itemize}
-Below we list the exact first-column vectors $\mathbf{a}_i = (a_{i,0}, \dots, a_{i,m-1}) \in \mathbb{F}_{q^2}^m$ ($i = 1, \dots, \ell-1$) of each block $M_\lambda(a_i)$ ($\lambda = 1$ unless noted):
+\subsection{Multi-Eigenmode Vandermonde Borders and Spectral Fourier Diagonalization}
 
-\begin{enumerate}\small
-  \item \textbf{$[[33, 11, 7]]_2$} ($G$, $m = 11, \ell = 3$, unbordered):\\
-  $\mathbf{a}_1 = (3, 2, 1, 3, 1, 0, 1, 2, 2, 3, 1)$, $\mathbf{a}_2 = (1, 3, 0, 1, 2, 0, 2, 2, 0, 0, 1)$.
+Fix $m \ge 3$ and a norm-$1$ multiplier $\lambda \in \mathbb{F}_{q^2}^\times$ satisfying $\lambda^{q+1} = 1$, and set $R_{m,\lambda} = \mathbb{F}_{q^2}[x]/(x^m - \lambda)$. Each polynomial $a(x) = \sum_{t=0}^{m-1} a_t x^t \in R_{m,\lambda}$ defines the $\lambda$-constacyclic matrix $M_\lambda(a) \in \mathbb{F}_{q^2}^{m \times m}$ with $(r, c)$-entry $a_{r-c}$ for $r \ge c$ and $\lambda a_{m+r-c}$ for $r < c$. Under the conjugate-transpose involution $a^\dagger(x) = a_0^q + \lambda^{-1} \sum_{t=1}^{m-1} a_{m-t}^q x^t$ (note $\lambda^q = \lambda^{-1}$), we have $M_\lambda(a)^\dagger = M_\lambda(a^\dagger)$ and $M_\lambda(a) M_\lambda(b) = M_\lambda(ab \bmod (x^m - \lambda))$.
 
-  \item \textbf{$[[34, 12, 7]]_2$} ($G_{\mathrm{bord}}$, $m = 11, \ell = 3$, trailing $\mathbf{1}_{11}$):\\
-  $\mathbf{a}_1 = (3, 0, 2, 1, 0, 0, 2, 3, 0, 1, 1)$, $\mathbf{a}_2 = (1, 0, 0, 3, 2, 3, 2, 2, 0, 0, 1)$.
+Suppose $\xi \in \mathbb{F}_{q^2}^\times$ is a norm-$1$ root of $x^m - \lambda = 0$ ($\xi^m = \lambda$ and $\xi^{q+1} = 1$, so $\xi^q = \xi^{-1}$), and define the eigenmode column $\vb{v}_*(\xi) = (1, \xi^{-1}, \xi^{-2}, \dots, \xi^{-(m-1)})^\top \in \mathbb{F}_{q^2}^m$. Direct multiplication gives $M_\lambda(x)\vb{v}_*(\xi) = \xi \vb{v}_*(\xi)$, whence $M_\lambda(a)\vb{v}_*(\xi) = a(\xi)\vb{v}_*(\xi)$ for all $a \in R_{m,\lambda}$.
 
-  \item \textbf{$[[36, 26, 4]]_2$} ($G_{\mathrm{bord}}$, $m = 5, \ell = 7$, trailing $\mathbf{1}_5$):\\
-  $\mathbf{a}_1 = (2, 0, 0, 1, 2)$, $\mathbf{a}_2 = (2, 0, 1, 3, 3)$, $\mathbf{a}_3 = (3, 0, 3, 1, 3)$, $\mathbf{a}_4 = (0, 2, 1, 0, 1)$, $\mathbf{a}_5 = (2, 2, 1, 3, 1)$, $\mathbf{a}_6 = (1, 0, 2, 0, 1)$.
-
-  \item \textbf{$[[49, 33, 5]]_2$} ($G_{\mathrm{bord}}$, $m = 8, \ell = 6$, trailing $\mathbf{1}_8$):\\
-  $\mathbf{a}_1 = (3, 2, 1, 1, 3, 3, 3, 1)$, $\mathbf{a}_2 = (0, 3, 3, 1, 1, 0, 2, 0)$, $\mathbf{a}_3 = (1, 2, 0, 0, 1, 0, 1, 2)$, $\mathbf{a}_4 = (2, 2, 3, 2, 0, 0, 1, 2)$, $\mathbf{a}_5 = (2, 1, 2, 2, 2, 2, 0, 0)$.
-
-  \item \textbf{$[[20, 10, 5]]_3$} ($G$, $m = 5, \ell = 4$, unbordered):\\
-  $\mathbf{a}_1 = (4, 7, 1, 4, 1)$, $\mathbf{a}_2 = (4, 4, 8, 2, 2)$, $\mathbf{a}_3 = (4, 8, 6, 4, 0)$.
-
-  \item \textbf{$[[18, 6, 6]]_4$} ($G$, $m = 6, \ell = 3$, unbordered):\\
-  $\mathbf{a}_1 = (11, 0, 11, 9, 4, 6)$, $\mathbf{a}_2 = (6, 6, 1, 6, 10, 8)$.
-
-  \item \textbf{$[[19, 7, 6]]_4$} ($G_{\mathrm{bord}}$, $m = 6, \ell = 3$, trailing $\mathbf{1}_6$):\\
-  $\mathbf{a}_1 = (1, 15, 8, 3, 5, 5)$, $\mathbf{a}_2 = (0, 14, 7, 2, 7, 11)$.
-
-  \item \textbf{$[[20, 10, 5]]_4$} ($G$, $m = 5, \ell = 4$, unbordered):\\
-  $\mathbf{a}_1 = (9, 4, 6, 11, 10)$, $\mathbf{a}_2 = (6, 13, 4, 0, 7)$, $\mathbf{a}_3 = (5, 10, 8, 9, 1)$.
-
-  \item \textbf{$[[24, 8, 7]]_4$} ($G$, $m = 8, \ell = 3$, unbordered):\\
-  $\mathbf{a}_1 = (14, 3, 11, 0, 12, 10, 14, 13)$, $\mathbf{a}_2 = (2, 1, 8, 15, 8, 14, 14, 8)$.
-
-  \item \textbf{$[[25, 9, 7]]_4$} ($G_{\mathrm{bord}}$, $m = 8, \ell = 3$, trailing $\mathbf{1}_8$):\\
-  $\mathbf{a}_1 = (8, 11, 5, 12, 7, 6, 2, 15)$, $\mathbf{a}_2 = (0, 15, 4, 14, 13, 13, 10, 4)$.
-
-  \item \textbf{$[[25, 15, 5]]_4$} ($G$, $m = 5, \ell = 5$, unbordered):\\
-  $\mathbf{a}_1 = (1, 15, 11, 12, 13)$, $\mathbf{a}_2 = (11, 8, 15, 3, 9)$, $\mathbf{a}_3 = (9, 1, 3, 15, 2)$, $\mathbf{a}_4 = (13, 2, 5, 13, 10)$.
-
-  \item \textbf{$[[26, 16, 5]]_4$} ($G_{\mathrm{bord}}$, $m = 5, \ell = 5$, trailing $\mathbf{1}_5$):\\
-  $\mathbf{a}_1 = (6, 0, 14, 1, 13)$, $\mathbf{a}_2 = (3, 4, 14, 4, 8)$, $\mathbf{a}_3 = (7, 4, 3, 7, 8)$, $\mathbf{a}_4 = (13, 0, 1, 7, 3)$.
-
-  \item \textbf{$[[19, 7, 6]]_5$} ($G_{\mathrm{bord}}$, $m = 6, \ell = 3$, trailing $\mathbf{1}_6$):\\
-  $\mathbf{a}_1 = (9, 12, 12, 2, 4, 1)$, $\mathbf{a}_2 = (21, 6, 13, 23, 5, 22)$.
-
-  \item \textbf{$[[24, 12, 6]]_5$} ($G$, $m = 6, \ell = 4$, unbordered):\\
-  $\mathbf{a}_1 = (13, 9, 5, 5, 7, 5)$, $\mathbf{a}_2 = (3, 15, 14, 19, 8, 15)$, $\mathbf{a}_3 = (24, 22, 0, 3, 19, 6)$.
-
-  \item \textbf{$[[32, 16, 7]]_5$} ($G$, $m = 8, \ell = 4$, $\lambda = 12 = 2 + 2\theta \in \mathbb{F}_{25}^\times$ with $\lambda^6 = 1$, unbordered):\\
-  $\mathbf{a}_1 = (11, 14, 24, 21, 18, 22, 20, 15)$, $\mathbf{a}_2 = (10, 2, 10, 22, 7, 0, 13, 23)$, $\mathbf{a}_3 = (6, 16, 5, 4, 10, 5, 8, 6)$.
-
-  \item \textbf{$[[33, 17, 7]]_5$} ($G_{\mathrm{bord}}$, $m = 8, \ell = 4$, trailing $\beta \mathbf{1}_8$ with $\beta = 7 = 2 + \theta \in \mathbb{F}_{25}^\times$):\\
-  $\mathbf{a}_1 = (20, 16, 3, 19, 10, 5, 6, 21)$, $\mathbf{a}_2 = (7, 1, 0, 5, 5, 14, 7, 17)$, $\mathbf{a}_3 = (1, 12, 5, 16, 14, 11, 0, 23)$.
-
-  \item \textbf{$[[21, 7, 7]]_7$} ($G$, $m = 7, \ell = 3$, unbordered):\\
-  $\mathbf{a}_1 = (38, 27, 0, 22, 22, 2, 15)$, $\mathbf{a}_2 = (16, 37, 25, 24, 28, 9, 39)$.
-
-  \item \textbf{$[[22, 8, 7]]_7$} ($G_{\mathrm{bord}}$, $m = 7, \ell = 3$, trailing $\mathbf{1}_7$):\\
-  $\mathbf{a}_1 = (14, 16, 37, 28, 11, 38, 37)$, $\mathbf{a}_2 = (18, 43, 28, 36, 25, 13, 3)$.
+\begin{theorem}[Comb-Free Multi-Eigenmode Vandermonde Quasi-Twisted Construction]\label{thm:vandermonde_qt}
+Let $\lambda \in \mathbb{F}_{q^2}^\times$ satisfy $\lambda^{q+1} = 1$, let $\xi_1, \dots, \xi_{b_p} \in \mathbb{F}_{q^2}^\times$ ($0 \le b_p < m$) be distinct roots of $x^m - \lambda = 0$ of norm $\xi_s^{q+1} = 1$, and let $\beta_1, \dots, \beta_{b_p} \in \mathbb{F}_{q^2}^\times$. For $a_1(x), \dots, a_{\ell-1}(x) \in R_{m,\lambda}$, set $n = \ell m + b_p$ and
+\[
+  G = \bigl[\, I_m \;\big|\; M_\lambda(a_1) \;\big|\; \cdots \;\big|\; M_\lambda(a_{\ell-1}) \;\big|\; \beta_1 \vb{v}_*(\xi_1) \;\big|\; \cdots \;\big|\; \beta_{b_p} \vb{v}_*(\xi_{b_p}) \,\bigr] \in \mathbb{F}_{q^2}^{m \times n}.
+\]
+\begin{enumerate}
+  \item $\mathrm{rank}_{\mathbb{F}_{q^2}}(G) = m$, the $b_p$ border columns are linearly independent over $\mathbb{F}_{q^2}$ (eliminating all pure-border dual codewords of weight $\le b_p$), and $G G^\dagger = \vb{0}$ if and only if
+  \begin{equation}\label{eq:multi_border_poly}
+    \sum_{i=1}^{\ell-1} a_i(x)\, a_i^\dagger(x) \equiv -1 - \sum_{s=1}^{b_p} \beta_s^{q+1} \sum_{t=0}^{m-1} \xi_s^{-t} x^t \pmod{x^m - \lambda}.
+  \end{equation}
+  \item Suppose further that $\gcd(m, p) = 1$ and $x^m - \lambda = \prod_{r=1}^m (x - \zeta_r)$ splits completely into $m$ norm-$1$ roots $\zeta_1, \dots, \zeta_m \in \mathbb{F}_{q^2}^\times$ (which holds whenever $m$ divides $q + 1$ and $\lambda^{(q+1)/m} = 1$). Then~\eqref{eq:multi_border_poly} is equivalent to the $m$ decoupled scalar norm equations in $\mathbb{F}_q$:
+  \begin{equation}\label{eq:spectral_fourier}
+    \sum_{i=1}^{\ell-1} \bigl(a_i(\zeta_r)\bigr)^{q+1} = -1 - m \sum_{s:\, \xi_s = \zeta_r} \beta_s^{q+1} \qquad (r = 1, \dots, m).
+  \end{equation}
 \end{enumerate}
+\end{theorem}
 
-\section{Independent Clean-Room Verification and Data Availability}
+\begin{proof}
+Containing $I_m$ ensures $\mathrm{rank}(G) = m$. The $m \times b_p$ border block is a column-scaled Vandermonde matrix at the $b_p \le m$ distinct nonzero elements $\xi_1^{-1}, \dots, \xi_{b_p}^{-1}$; its leading $b_p \times b_p$ minor has determinant $\bigl(\prod_{s=1}^{b_p} \beta_s\bigr) \prod_{1 \le u < v \le b_p} (\xi_v^{-1} - \xi_u^{-1}) \ne 0$, so no nontrivial $\mathbb{F}_{q^2}$-linear combination of the $b_p$ border columns vanishes. Next, for $e_\xi(x) = \sum_{t=0}^{m-1} \xi^{-t} x^t \in R_{m,\lambda}$, the $(r, c)$-entry of $\vb{v}_*(\xi)\vb{v}_*(\xi)^\dagger$ is $\xi^{-r} (\xi^{-q})^c = \xi^{-(r-c)}$ since $\xi^q = \xi^{-1}$. For $r \ge c$, $\bigl[M_\lambda(e_\xi)\bigr]_{r,c} = \xi^{-(r-c)}$; for $r < c$, $\bigl[M_\lambda(e_\xi)\bigr]_{r,c} = \lambda \xi^{-(m+r-c)} = (\lambda \xi^{-m})\xi^{-(r-c)} = \xi^{-(r-c)}$. Thus $\vb{v}_*(\xi)\vb{v}_*(\xi)^\dagger = M_\lambda(e_\xi)$, so $G G^\dagger = M_\lambda\bigl(1 + \sum_{i=1}^{\ell-1} a_i a_i^\dagger + \sum_{s=1}^{b_p} \beta_s^{q+1} e_{\xi_s}\bigr) = \vb{0}$ iff~\eqref{eq:multi_border_poly} holds.
 
-Every code in \texttt{v1.1.0} was verified without assuming cyclic or constacyclic symmetry by:
-(1)~our standalone zero-symmetry projective Meet-in-the-Middle verifier (\texttt{verify\_all\_qecc.py}), which checks SHA-256 digests, $\mathbb{F}_{q^2}$ RREF rank, $G G^\dagger = \mathbf{0}$, symplectic orthogonality $X Z^\top - Z X^\top \equiv \mathbf{0} \pmod q$, and exact minimum distance $d(C^{\perp_H}) \ge d_{\mathrm{new}}$ across all eighteen codes in $\sim 10$~seconds; and
-(2)~a unified native Magma script (\texttt{magma/verify\_all\_18\_codes.m}) calling \texttt{HermitianDual}, \texttt{MinimumWeight}, and \texttt{QuantumCode}.
-All certificates, verifiers, and solvers are publicly archived at \url{https://github.com/ramuza0113-sketch/qecc-codetables-2026} and Zenodo Concept DOI \href{https://doi.org/10.5281/zenodo.24513985}{\texttt{doi:10.5281/zenodo.24513985}}.
+Under the hypotheses of~(2), the Chinese Remainder Theorem gives an $\mathbb{F}_{q^2}$-algebra isomorphism $R_{m,\lambda} \xrightarrow{\sim} \mathbb{F}_{q^2}^m$, $f \mapsto (f(\zeta_1), \dots, f(\zeta_m))$. Because $\lambda^{-1} \zeta_r^m = 1$ and $\zeta_r^{-1} = \zeta_r^q$, evaluating $a_i^\dagger$ at $\zeta_r$ yields $a_i^\dagger(\zeta_r) = a_{i,0}^q + \sum_{t=1}^{m-1} a_{i,m-t}^q \lambda^{-1} \zeta_r^t = \sum_{u=0}^{m-1} a_{i,u}^q \zeta_r^{-u} = (a_i(\zeta_r))^q$, hence $(a_i a_i^\dagger)(\zeta_r) = (a_i(\zeta_r))^{q+1}$. Finally, $e_{\xi_s}(\zeta_r) = \sum_{t=0}^{m-1} (\zeta_r / \xi_s)^t$ equals $m$ if $\xi_s = \zeta_r$ and $\frac{(\zeta_r/\xi_s)^m - 1}{\zeta_r/\xi_s - 1} = \frac{\lambda/\lambda - 1}{\zeta_r/\xi_s - 1} = 0$ otherwise, yielding~\eqref{eq:spectral_fourier}.
+\end{proof}
 
-\begin{thebibliography}{9}
+Theorem~\ref{thm:vandermonde_qt} unlocks the entire Exact-Optimal family $[[23,13,5]]_4$, $[[24,14,5]]_4$, $[[25,15,5]]_4$, $[[26,16,5]]_4$, $[[27,17,5]]_4$, $[[28,18,5]]_4$, and $[[29,19,5]]_4$ over $\mathbb{F}_{16}$ ($m = 5$ dividing $4 + 1$, covering all residues $b_p \in \{0, 1, 2, 3, 4\}$), as well as $[[15,5,6]]_8$ over $\mathbb{F}_{64}$ ($m = 5, \ell = 3, \lambda = 6$).
+
+\subsection{Equivariant \texorpdfstring{$\mathbb{F}_q$}{GF(q)}-Linear Symplectic Stabilizer Codes for Odd and Even \texorpdfstring{$r_S$}{r\_S}}
+
+To construct codes with odd stabilizer rank $r_S = n - k$ (as well as $\mathbb{F}_q$-linear Lagrangian codes not induced from $\mathbb{F}_{q^2}$), we work directly in $\mathbb{F}_q^{2n}$~\cite{Ketkar2006}.
+
+\begin{theorem}[Pure $\mathbb{F}_q$-Symplectic Rank Criterion]\label{thm:symplectic}
+Let $q = p^e$, let $1 \le r_S < n$, and let $X, Z \in \mathbb{F}_q^{r_S \times n}$ satisfy $\mathrm{rank}_{\mathbb{F}_q}([X \mid Z]) = r_S$ and $X Z^\top - Z X^\top = \vb{0}$ over $\mathbb{F}_q$. If for every subset $S \subseteq \{0, \dots, n - 1\}$ of cardinality $|S| = d - 1$ the $r_S \times 2(d - 1)$ submatrix $[X_{\cdot, S} \mid Z_{\cdot, S}]$ has full $\mathbb{F}_q$-column rank $2(d - 1)$ (in particular requiring $r_S \ge 2d - 2$, the Quantum Singleton Bound), then $[X \mid Z]$ defines a pure $[[n, n - r_S, \ge d]]_q$ quantum stabilizer code.
+\end{theorem}
+
+\begin{proof}
+Equip $\mathbb{F}_q$ with any $\mathbb{F}_p$-linear map $\mathrm{tr}: \mathbb{F}_q \to \mathbb{F}_p$ not identically zero (e.g.\ the field trace $\mathrm{Tr}_{\mathbb{F}_q/\mathbb{F}_p}$); then $(a, b) \mapsto \mathrm{tr}(ab)$ is a nondegenerate symmetric $\mathbb{F}_p$-bilinear form, and $\mathbb{F}_q$-linearity of $C_S = \mathrm{rowspace}_{\mathbb{F}_q}([X \mid Z])$ together with $X Z^\top - Z X^\top = \vb{0}$ implies trace-symplectic self-orthogonality $\mathrm{Tr}_{\mathbb{F}_q/\mathbb{F}_p}(\vb{x} \cdot \vb{z}'^\top - \vb{z} \cdot \vb{x}'^\top) = 0$ for all $(\vb{x}, \vb{z}), (\vb{x}', \vb{z}') \in C_S$~\cite[Lemma~16]{Ketkar2006}. A nonzero vector $(\vb{u}, \vb{v}) \in \mathbb{F}_q^{2n} \setminus \{\vb{0}\}$ supported on qudit subset $S$ with $|S| \le d - 1$ lies in $C_S^{\perp_s}$ iff $\sum_{c \in S} (u_c Z_{j,c} - v_c X_{j,c}) = 0$ for all $0 \le j < r_S$, which is a nontrivial $\mathbb{F}_q$-linear dependence among the $2|S|$ columns of $[X_{\cdot, S} \mid Z_{\cdot, S}]$. Full column rank $2(d - 1)$ on every $(d - 1)$-subset $S$ forbids all nonzero elements of $C_S^{\perp_s}$ of symplectic weight $\le d - 1$, establishing a pure $[[n, n - r_S, \ge d]]_q$ stabilizer code by~\cite[Corollary~19]{Ketkar2006}.
+\end{proof}
+
+Specializing $[X \mid Z]$ to $\ell$-quasi-cyclic and bordered Lagrangian block structures over $\mathbb{F}_q$ yields $31$ direct symplectic parent codes, including $20$ odd-$r_S$ codes such as the Exact-Optimal $[[21,14,4]]_4$ ($r_S = 7$, closing $3\text{--}4 \to 4$) and the high-distance record $[[46,11,13]]_8$ ($r_S = 35$, improving $12\text{--}18 \to 13\text{--}18$).
+
+\subsection{Dieudonn\'e--Witt Unitary Householder Navigation on the Isotropic Grassmannian}
+
+When $n \le 15$ and $2d = n - k + 2$ (QMDS) or $n - k + 1$, every nontrivial cyclic or monomial symmetry can obstruct the maximum minimum distance. Instead of imposing group symmetry, we navigate the full Hermitian isotropic Grassmannian
+\[
+  \mathrm{IGr}_H(m, n; \mathbb{F}_{q^2}) = \bigl\{ C \subseteq \mathbb{F}_{q^2}^n : \dim_{\mathbb{F}_{q^2}}(C) = m,\; C \subseteq C^{\perp_H} \bigr\}
+\]
+directly via rank-$1$ unitary reflections and transvections acting on the right of $G \in \mathbb{F}_{q^2}^{m \times n}$.
+
+\begin{theorem}[Unitary Householder Reflections and Transvections over $\mathbb{F}_{q^2}$]\label{thm:householder}
+Let $\vb{u} \in \mathbb{F}_{q^2}^n \setminus \{\vb{0}\}$, let $\nu = \vb{u}^\dagger \vb{u} = \sum_{j=0}^{n-1} u_j^{q+1} \in \mathbb{F}_q$, and let $\tau \in \mathbb{F}_{q^2}^\times$. Define $H(\vb{u}, \tau) = I_n - \tau \vb{u}\vb{u}^\dagger \in \mathbb{F}_{q^2}^{n \times n}$.
+\begin{enumerate}
+  \item $H(\vb{u}, \tau)$ is $\mathbb{F}_{q^2}$-unitary ($H H^\dagger = I_n$) if and only if
+  \begin{equation}\label{eq:householder_cond}
+    \tau + \tau^q = \nu\, \tau^{q+1} \quad \text{in } \mathbb{F}_q.
+  \end{equation}
+  By Hilbert's Theorem~90 and surjectivity of trace and norm on $\mathbb{F}_{q^2}/\mathbb{F}_q$, equation~\eqref{eq:householder_cond} has exactly $q$ nonzero solutions $\tau \in \mathbb{F}_{q^2}^\times$ when $\nu \ne 0$ (anisotropic reflections, satisfying $\tau^{-1} + \tau^{-q} = \nu$) and $q - 1$ nonzero solutions ($\tau + \tau^q = 0$, isotropic unitary transvections) when $\nu = 0$.
+  \item For every $G \in \mathbb{F}_{q^2}^{m \times n}$ with $\mathrm{rank}(G) = m$ and $G G^\dagger = \vb{0}$, the $O(mn)$ rank-$1$ update $G' = G H(\vb{u}, \tau) = G - \tau (G\vb{u})\vb{u}^\dagger$ preserves $\mathrm{rank}(G') = m$ and $G'(G')^\dagger = \vb{0}$ identically, and by Witt's theorem~\cite{Dieudonne1963} the group generated by $\{H(\vb{u}, \tau)\}$ acts transitively on $\mathrm{IGr}_H(m, n; \mathbb{F}_{q^2})$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Expanding $H(\vb{u}, \tau) H(\vb{u}, \tau)^\dagger = (I_n - \tau \vb{u}\vb{u}^\dagger)(I_n - \tau^q \vb{u}\vb{u}^\dagger) = I_n - (\tau + \tau^q - \nu \tau^{q+1})\vb{u}\vb{u}^\dagger$ shows $H H^\dagger = I_n$ iff $\tau + \tau^q = \nu \tau^{q+1}$ because $\vb{u}\vb{u}^\dagger \ne \vb{0}$. Dividing by $\tau^{q+1} \ne 0$ when $\nu \ne 0$ gives $\mathrm{Tr}_{\mathbb{F}_{q^2}/\mathbb{F}_q}(\tau^{-1}) = \nu$, which has exactly $q$ solutions in $\mathbb{F}_{q^2}$ (none equal to $0$ since $\nu \ne 0$); when $\nu = 0$, $\mathrm{Tr}_{\mathbb{F}_{q^2}/\mathbb{F}_q}(\tau) = 0$ has $q - 1$ nonzero solutions. Unitarity gives $G'(G')^\dagger = G H H^\dagger G^\dagger = G G^\dagger = \vb{0}$ and $\mathrm{rank}(G') = \mathrm{rank}(G) = m$. By Witt's extension theorem for nondegenerate Hermitian spaces over $\mathbb{F}_{q^2}$~\cite{Dieudonne1963}, the unitary group $U_n(\mathbb{F}_{q^2})$ acts transitively on $m$-dimensional totally isotropic subspaces and is generated by unitary reflections and transvections of the form $H(\vb{u}, \tau)$ (with the sole known classical exception $(q, n) = (2, 4)$ not needed for $n \ge 11$).
+\end{proof}
+
+Executing massive warp-parallel Tabu/WalkSAT trajectories via sparse rank-$1$ Householder steps (weight-$2$, $3$, and $4$ vectors $\vb{u}$) with zero group-symmetry constraints resolved four longstanding open short-length lids: $[[13,1,6]]_3$, $[[11,3,5]]_4$ (inducing $[[11,2,5]]_4$ and $[[12,3,5]]_4$), and the two non-GRS QMDS codes $[[11,1,6]]_5$ and $[[12,0,7]]_5$ ($2d = n - k + 2$, exceeding the classical $\mathbb{F}_5$-MDS length $q + 1 = 6$~\cite{Ball2021}).
+
+\subsection{Two-Block and Three-Block NSC Quasi-Unitary Matrix-Product Codes}
+
+To reach pure minimum distances $d \in [10, 16]$ at block lengths up to $n = 100$ without $\binom{100}{15}$ brute-force search, we construct $2$-block and $3$-block upper-triangular matrix-product codes~\cite{Blackmore2001,Hernando2009} with Frobenius-twisted column scalings over $\mathbb{F}_{q^2}$. For a vector $\vb{x} = (x_0, \dots, x_{n_0-1}) \in \mathbb{F}_{q^2}^{n_0}$, denote its componentwise Frobenius conjugate by $\vb{x}^{[q]} = (x_0^q, \dots, x_{n_0-1}^q)$ and coordinatewise product by $\odot$.
+
+\begin{theorem}[2-Block and 3-Block NSC Quasi-Unitary Matrix-Product Hermitian Codes]\label{thm:mp23}
+Let $n_0 \ge 4$ and let $C_s = \mathrm{rowspace}_{\mathbb{F}_{q^2}}(G_s)$ ($G_s \in \mathbb{F}_{q^2}^{m_s \times n_0}$ of full rank $m_s$) be linear codes over $\mathbb{F}_{q^2}$.
+\begin{enumerate}
+  \item \emph{(2-Block Construction, $n = 2n_0$, $m = m_1 + m_2$):} Let $\vb{D} = (D_0, \dots, D_{n_0-1}) \in (\mathbb{F}_{q^2}^\times)^{n_0}$ have all entries nonzero, and set
+  \[
+    G = \begin{bmatrix} G_1 & G_1 \operatorname{diag}(\vb{D}) \\ \vb{0} & G_2 \end{bmatrix} \in \mathbb{F}_{q^2}^{(m_1 + m_2) \times (2n_0)}.
+  \]
+  If $G G^\dagger = \vb{0}$ over $\mathbb{F}_{q^2}$, then $C = \mathrm{rowspace}(G)$ has dimension $m_1 + m_2$, satisfies $C \subseteq C^{\perp_H}$, and has dual minimum distance
+  \begin{equation}\label{eq:mp2_dist}
+    d(C^{\perp_H}) \ge \min\!\bigl(d(C_1^{\perp_H}),\; 2\, d(C_2^{\perp_H})\bigr),
+  \end{equation}
+  yielding a pure $[[2n_0,\, 2n_0 - 2(m_1 + m_2),\, \ge \min(d(C_1^{\perp_H}), 2d(C_2^{\perp_H}))]]_q$ stabilizer code.
+  \item \emph{(3-Block NSC Construction, $n = 3n_0$, $m = m_1 + m_2 + m_3$):} Let $\vb{D}_1, \vb{D}_2, \vb{E} \in (\mathbb{F}_{q^2}^\times)^{n_0}$ satisfy the Non-Singular-by-Columns (NSC) condition $D_{1,j} E_j \ne D_{2,j}$ for every $0 \le j < n_0$, and set
+  \[
+    G = \begin{bmatrix}
+      G_1 & G_1 \operatorname{diag}(\vb{D}_1) & G_1 \operatorname{diag}(\vb{D}_2) \\
+      \vb{0} & G_2 & G_2 \operatorname{diag}(\vb{E}) \\
+      \vb{0} & \vb{0} & G_3
+    \end{bmatrix} \in \mathbb{F}_{q^2}^{(m_1 + m_2 + m_3) \times (3n_0)}.
+  \]
+  If $G G^\dagger = \vb{0}$ over $\mathbb{F}_{q^2}$, then $\dim(C) = m_1 + m_2 + m_3$, $C \subseteq C^{\perp_H}$, and
+  \begin{equation}\label{eq:mp3_dist}
+    d(C^{\perp_H}) \ge \min\!\bigl(d(C_1^{\perp_H}),\; 2\, d(C_2^{\perp_H}),\; 3\, d(C_3^{\perp_H})\bigr).
+  \end{equation}
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+Block upper-triangularity with full-rank diagonal blocks $G_s$ gives $\mathrm{rank}(G) = \sum_s m_s$. For~(1), let $(\vb{u}, \vb{v}) \in C^{\perp_H} \setminus \{\vb{0}\}$ ($\vb{u}, \vb{v} \in \mathbb{F}_{q^2}^{n_0}$). The condition $G (\vb{u}, \vb{v})^\dagger = \vb{0}$ reads $G_1(\vb{u} + \vb{D}^{[q]} \odot \vb{v})^\dagger = \vb{0}$ and $G_2 \vb{v}^\dagger = \vb{0}$. Set $\vb{w}_1 = \vb{u} + \vb{D}^{[q]} \odot \vb{v} \in C_1^{\perp_H}$ and $\vb{w}_2 = \vb{v} \in C_2^{\perp_H}$. If $\vb{w}_1 \ne \vb{0}$, subadditivity of Hamming weight on each coordinate $j$ gives $\mathrm{wt}(\vb{u}) + \mathrm{wt}(\vb{v}) \ge \mathrm{wt}(\vb{w}_1) \ge d(C_1^{\perp_H})$. If $\vb{w}_1 = \vb{0}$, then $\vb{v} \ne \vb{0}$ and $u_j = -D_j^q v_j$ has the exact same support as $v_j$ because $D_j \ne 0$, whence $\mathrm{wt}(\vb{u}, \vb{v}) = 2\,\mathrm{wt}(\vb{v}) \ge 2\,d(C_2^{\perp_H})$, proving~\eqref{eq:mp2_dist}.
+
+For~(2), let $(\vb{u}_1, \vb{u}_2, \vb{u}_3) \in C^{\perp_H} \setminus \{\vb{0}\}$. Then $\vb{w}_1 := \vb{u}_1 + \vb{D}_1^{[q]} \odot \vb{u}_2 + \vb{D}_2^{[q]} \odot \vb{u}_3 \in C_1^{\perp_H}$, $\vb{w}_2 := \vb{u}_2 + \vb{E}^{[q]} \odot \vb{u}_3 \in C_2^{\perp_H}$, and $\vb{w}_3 := \vb{u}_3 \in C_3^{\perp_H}$.
+\emph{Case~1 ($\vb{w}_1 \ne \vb{0}$):} $\sum_{s=1}^3 \mathrm{wt}(\vb{u}_s) \ge \mathrm{wt}(\vb{w}_1) \ge d(C_1^{\perp_H})$.
+\emph{Case~2 ($\vb{w}_1 = \vb{0}, \vb{w}_2 \ne \vb{0}$):} For every $j \in \mathrm{supp}(\vb{w}_2)$, $(u_{2,j}, u_{3,j}) \ne (0, 0)$. If $u_{3,j} = 0$, then $u_{2,j} = w_{2,j} \ne 0$ and $u_{1,j} = -D_{1,j}^q u_{2,j} \ne 0$ ($D_{1,j} \ne 0$); if $u_{3,j} \ne 0$, at least one of $u_{2,j}$ or $u_{1,j} = -D_{1,j}^q u_{2,j} - D_{2,j}^q u_{3,j}$ is also nonzero whenever $u_{2,j} = 0$ ($D_{2,j} \ne 0$), so in every subcase at least two of $(u_{1,j}, u_{2,j}, u_{3,j})$ are nonzero on $\mathrm{supp}(\vb{w}_2)$, giving $\sum_{s=1}^3 \mathrm{wt}(\vb{u}_s) \ge 2\,\mathrm{wt}(\vb{w}_2) \ge 2\,d(C_2^{\perp_H})$.
+\emph{Case~3 ($\vb{w}_1 = \vb{w}_2 = \vb{0}, \vb{w}_3 \ne \vb{0}$):} Then $u_{2,j} = -E_j^q u_{3,j}$ and $u_{1,j} = (D_{1,j} E_j - D_{2,j})^q u_{3,j}$. Since $E_j \ne 0$ and $D_{1,j} E_j \ne D_{2,j}$ for all $j$, all three of $(u_{1,j}, u_{2,j}, u_{3,j})$ are nonzero for every $j \in \mathrm{supp}(\vb{w}_3)$, so $\sum_{s=1}^3 \mathrm{wt}(\vb{u}_s) = 3\,\mathrm{wt}(\vb{w}_3) \ge 3\,d(C_3^{\perp_H})$, establishing~\eqref{eq:mp3_dist}.
+\end{proof}
+
+By choosing $C_1$ as an $[n_0, m_1]_{q^2}$ projective generalized Reed--Solomon (PGRS) MDS code ($n_0 \le q^2 + 1$, $d(C_1^{\perp_H}) = m_1 + 1$) and $C_2$ via Frobenius-conjugated PGRS monomials satisfying $G_1 \operatorname{diag}(\vb{1} + \vb{D}\odot\vb{D}^{[q]}) G_1^\dagger = \vb{0}$, $G_1 \operatorname{diag}(\vb{D}) G_2^\dagger = \vb{0}$, and $G_2 G_2^\dagger = \vb{0}$, Theorem~\ref{thm:mp23} produces $287$ explicit pure parent codes ($285$ MP2 and $2$ MP3) reaching $d = 16$ at $n = 100$ over $q \in \{7, 8\}$ and achieving 116 direct $\Delta d = +2$ jumps over \texttt{CodeTables.de}.
+
+\section{Eighteen Exact-Optimal Closures and Explicit Generator Matrices}\label{sec:results}
+
+Table~\ref{tab:exact18} lists all $18$ entries in \texttt{CodeTables.de} closed to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$) in \texttt{v1.2.0}: $16$ are \emph{strictly pure} stabilizer codes ($15$ direct parent constructions and $1$ pure subcode $[[11,2,5]]_4$), while $2$ ($[[37,26,4]]_2$ and $[[12,3,5]]_4$, marked ``Ext.'') are obtained via terminal weight-$1$ ancilla extension $\mathrm{Extend}(\cdot, +1)$. Across Tables~\ref{tab:exact18}, \ref{tab:milestones}, and~\ref{tab:all397}, SHA-256 digests are displayed uniformly by their leading $12$ hexadecimal characters (with full $64$-character digests printed in Subsection~\ref{subsec:matrices}).
+
+\begin{table}[htbp]
+\centering
+\caption{All $18$ previously open entries in \texttt{CodeTables.de} closed to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$) in \texttt{v1.2.0} ($16$ strictly pure stabilizer codes and $2$ terminal $\mathrm{Extend}$ closures).}\label{tab:exact18}
+\vspace{4pt}
+{\footnotesize\setlength{\tabcolsep}{3.5pt}\renewcommand{\arraystretch}{1.12}
+\begin{tabular}{@{}ccccccll@{}}
+\toprule
+\# & $q$ & Code $[[n,k]]_q$ & Prev. & \textbf{Exact $d^\star$} & Purity & Construction / Derivation & SHA-256 \\
+\midrule
+$1$ & $2$ & $[[36,26]]_{2}$ & $3\text{--}4$ & $\mathbf{4}$ & Pure & Bordered Hermitian QT ($m=5, \ell=7, b_p=1$) & \texttt{579c5890fd4c} \\
+$2$ & $2$ & $[[37,26]]_{2}$ & $3\text{--}4$ & $\mathbf{4}$ & Ext. & $\mathrm{Extend}([[36,26,4]]_2,\,+1)$ & --- \\
+\midrule
+$3$ & $3$ & $[[13,1]]_{3}$ & $5\text{--}6$ & $\mathbf{6}$ & Pure & Witt--Householder $\mathrm{IGr}_H$ ($m=6$) & \texttt{b6ddad35b344} \\
+$4$ & $3$ & $[[20,10]]_{3}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Unbordered Hermitian QT ($m=5, \ell=4$) & \texttt{4be77100499b} \\
+\midrule
+$5$ & $4$ & $[[11,2]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & $\mathrm{PureSubcode}([[11,3,5]]_4,\,-1)$ & --- \\
+$6$ & $4$ & $[[11,3]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Witt--Householder $\mathrm{IGr}_H$ ($m=4$) & \texttt{440b445eb310} \\
+$7$ & $4$ & $[[12,3]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Ext. & $\mathrm{Extend}([[11,3,5]]_4,\,+1)$ & --- \\
+$8$ & $4$ & $[[21,14]]_{4}$ & $3\text{--}4$ & $\mathbf{4}$ & Pure & $\mathbb{F}_4$-Symplectic ($r_S=7$) & \texttt{1e1f62fb8225} \\
+$9$ & $4$ & $[[23,13]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 3-Eigenmode Vandermonde QT ($m=5, \ell=4, b_p=3$) & \texttt{5d6d9eaab2db} \\
+$10$ & $4$ & $[[24,14]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 4-Eigenmode Vandermonde QT ($m=5, \ell=4, b_p=4$) & \texttt{f1b5bddf1b09} \\
+$11$ & $4$ & $[[25,15]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Unbordered Hermitian QT ($m=5, \ell=5$) & \texttt{6198f35bf566} \\
+$12$ & $4$ & $[[26,16]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & Bordered Hermitian QT ($m=5, \ell=5, b_p=1$) & \texttt{739c1d90d608} \\
+$13$ & $4$ & $[[27,17]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 2-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=2$) & \texttt{0ca33cb9420e} \\
+$14$ & $4$ & $[[28,18]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 3-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=3$) & \texttt{a6f6142593e9} \\
+$15$ & $4$ & $[[29,19]]_{4}$ & $4\text{--}5$ & $\mathbf{5}$ & Pure & 4-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=4$) & \texttt{8d9f9d3a56ea} \\
+\midrule
+$16$ & $5$ & $[[11,1]]_{5}$ & $5\text{--}6$ & $\mathbf{6}$ & Pure & Householder Non-GRS QMDS ($m=5$) & \texttt{40b181c84577} \\
+$17$ & $5$ & $[[12,0]]_{5}$ & $6\text{--}7$ & $\mathbf{7}$ & Pure & Householder Self-Dual QMDS ($m=6$) & \texttt{349002c6433a} \\
+\midrule
+$18$ & $8$ & $[[15,5]]_{8}$ & $5\text{--}6$ & $\mathbf{6}$ & Pure & $\lambda$-Constacyclic Hermitian QT ($m=5, \ell=3$) & \texttt{bf5e6f2be19e} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\subsection{Finite-Field Conventions and Complete Generator Matrices for All 15 Exact-Optimal Parents}\label{subsec:matrices}
+
+Across Subsection~\ref{subsec:matrices} and all $397$ JSON certificates in \texttt{certificates/}, elements of $\mathbb{F}_{q^2}$ are encoded as integers $u \in \{0, \dots, q^2 - 1\}$ under the Frobenius involution $u \mapsto u^q$ as follows:
+\begin{itemize}\small
+  \item $q = 2$: $\mathbb{F}_4 = \mathbb{F}_2[\omega]/(\omega^2 + \omega + 1)$, $u = c_0 + 2c_1$ ($c_0, c_1 \in \{0, 1\}$), $\omega^2 = \omega + 1$.
+  \item $q = 3$: $\mathbb{F}_9 = \mathbb{F}_3[\theta]/(\theta^2 + 1)$ ($\theta^2 = 2$), $u = a + 3b$ ($a, b \in \{0, 1, 2\}$), $(a + b\theta)^3 = a - b\theta$.
+  \item $q = 4$: $\mathbb{F}_{16} = \mathbb{F}_2[z]/(z^4 + z + 1)$, $u = \sum_{j=0}^3 c_j 2^j$ ($c_j \in \{0, 1\}$), Frobenius $u \mapsto u^4$.
+  \item $q = 5$: $\mathbb{F}_{25} = \mathbb{F}_5[\theta]/(\theta^2 + 3)$ ($\theta^2 = 2$), $u = a + 5b$ ($a, b \in \{0, \dots, 4\}$), $(a + b\theta)^5 = a - b\theta$.
+  \item $q = 7$: $\mathbb{F}_{49} = \mathbb{F}_7[\theta]/(\theta^2 + 4)$ ($\theta^2 = 3$), $u = a + 7b$ ($a, b \in \{0, \dots, 6\}$), $(a + b\theta)^7 = a - b\theta$.
+  \item $q = 8$: $\mathbb{F}_{64} = \mathbb{F}_2[z]/(z^6 + z + 1)$, $u = \sum_{j=0}^5 c_j 2^j$ ($c_j \in \{0, 1\}$), Frobenius $u \mapsto u^8$.
+\end{itemize}
+For $\mathbb{F}_q$-symplectic matrices $[X \mid Z]$, prime alphabets $q \in \{2, 3, 5, 7\}$ use standard residues $\mathbb{Z}_q$, while $q = 4$ uses $\mathbb{F}_2[\alpha]/(\alpha^2 + \alpha + 1)$ ($u = c_0 + 2c_1$) and $q = 8$ uses $\mathbb{F}_2[\alpha]/(\alpha^3 + \alpha + 1)$ ($u = c_0 + 2c_1 + 4c_2$). Below we print the complete generator matrices and full $64$-character SHA-256 digests of all $15$ direct exact-optimal parent codes.
+
+\paragraph{1. Pure Exact-Optimal $[[36,26,4]]_{2}$ (\texttt{CodeTables.de}: $3\text{--}4 \to \mathbf{4}$; Bordered Hermitian QT ($m=5, \ell=7, b_p=1$)).} Generator matrix $G \in \mathbb{F}_{4}^{5 \times 36}$\\
+{\footnotesize\texttt{SHA-256: 579c5890fd4ccb6bb6d2716a2ce829dd88198836dab3d6f8db525245aff81b6d}}
+{\scriptsize\[
+G_{2,36,26} = \setlength{\arraycolsep}{1.65pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{36}{r}}
+1 & 0 & 0 & 0 & 0 & 2 & 2 & 1 & 0 & 0 & 2 & 3 & 3 & 1 & 0 & 3 & 3 & 1 & 3 & 0 & 0 & 1 & 0 & 1 & 2 & 2 & 1 & 3 & 1 & 2 & 1 & 1 & 0 & 2 & 0 & 1 \\
+0 & 1 & 0 & 0 & 0 & 0 & 2 & 2 & 1 & 0 & 0 & 2 & 3 & 3 & 1 & 0 & 3 & 3 & 1 & 3 & 2 & 0 & 1 & 0 & 1 & 2 & 2 & 1 & 3 & 1 & 0 & 1 & 1 & 0 & 2 & 1 \\
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 2 & 2 & 1 & 1 & 0 & 2 & 3 & 3 & 3 & 0 & 3 & 3 & 1 & 1 & 2 & 0 & 1 & 0 & 1 & 2 & 2 & 1 & 3 & 2 & 0 & 1 & 1 & 0 & 1 \\
+0 & 0 & 0 & 1 & 0 & 1 & 0 & 0 & 2 & 2 & 3 & 1 & 0 & 2 & 3 & 1 & 3 & 0 & 3 & 3 & 0 & 1 & 2 & 0 & 1 & 3 & 1 & 2 & 2 & 1 & 0 & 2 & 0 & 1 & 1 & 1 \\
+0 & 0 & 0 & 0 & 1 & 2 & 1 & 0 & 0 & 2 & 3 & 3 & 1 & 0 & 2 & 3 & 1 & 3 & 0 & 3 & 1 & 0 & 1 & 2 & 0 & 1 & 3 & 1 & 2 & 2 & 1 & 0 & 2 & 0 & 1 & 1
+\end{array}\right].
+\]}
+
+\paragraph{2. Pure Exact-Optimal $[[13,1,6]]_{3}$ (\texttt{CodeTables.de}: $5\text{--}6 \to \mathbf{6}$; Witt--Householder $\mathrm{IGr}_H$ ($m=6$)).} Generator matrix $G \in \mathbb{F}_{9}^{6 \times 13}$\\
+{\footnotesize\texttt{SHA-256: b6ddad35b344d3297459ba7595f71a7112b649dea9aad9449660b05528ebcd3a}}
+{\scriptsize\[
+G_{3,13,1} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{13}{r}}
+1 & 5 & 2 & 0 & 3 & 1 & 7 & 5 & 3 & 0 & 1 & 3 & 4 \\
+0 & 8 & 2 & 0 & 8 & 5 & 4 & 0 & 7 & 2 & 7 & 7 & 4 \\
+0 & 0 & 4 & 0 & 5 & 8 & 1 & 7 & 2 & 8 & 6 & 0 & 4 \\
+0 & 6 & 8 & 1 & 1 & 5 & 3 & 4 & 8 & 6 & 0 & 6 & 3 \\
+0 & 8 & 4 & 0 & 0 & 1 & 1 & 2 & 2 & 6 & 5 & 5 & 8 \\
+0 & 4 & 7 & 0 & 6 & 1 & 4 & 3 & 3 & 1 & 5 & 6 & 1
+\end{array}\right].
+\]}
+
+\paragraph{3. Pure Exact-Optimal $[[20,10,5]]_{3}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; Unbordered Hermitian QT ($m=5, \ell=4$)).} Generator matrix $G \in \mathbb{F}_{9}^{5 \times 20}$\\
+{\footnotesize\texttt{SHA-256: 4be77100499b51dddc666546c68b000341d06b1d17c18cfc46b6614f33206104}}
+{\scriptsize\[
+G_{3,20,10} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{20}{r}}
+1 & 0 & 0 & 0 & 0 & 4 & 1 & 4 & 1 & 7 & 4 & 2 & 2 & 8 & 4 & 4 & 0 & 4 & 6 & 8 \\
+0 & 1 & 0 & 0 & 0 & 7 & 4 & 1 & 4 & 1 & 4 & 4 & 2 & 2 & 8 & 8 & 4 & 0 & 4 & 6 \\
+0 & 0 & 1 & 0 & 0 & 1 & 7 & 4 & 1 & 4 & 8 & 4 & 4 & 2 & 2 & 6 & 8 & 4 & 0 & 4 \\
+0 & 0 & 0 & 1 & 0 & 4 & 1 & 7 & 4 & 1 & 2 & 8 & 4 & 4 & 2 & 4 & 6 & 8 & 4 & 0 \\
+0 & 0 & 0 & 0 & 1 & 1 & 4 & 1 & 7 & 4 & 2 & 2 & 8 & 4 & 4 & 0 & 4 & 6 & 8 & 4
+\end{array}\right].
+\]}
+
+\paragraph{4. Pure Exact-Optimal $[[11,3,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; Witt--Householder $\mathrm{IGr}_H$ ($m=4$)).} Generator matrix $G \in \mathbb{F}_{16}^{4 \times 11}$\\
+{\footnotesize\texttt{SHA-256: 440b445eb3107b8942690065ced272ecae7a2c6997eb9f36308b4dbf25128813}}
+{\scriptsize\[
+G_{4,11,3} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{11}{r}}
+13 & 12 & 3 & 6 & 13 & 8 & 15 & 6 & 13 & 3 & 4 \\
+3 & 8 & 13 & 10 & 7 & 5 & 15 & 4 & 9 & 4 & 6 \\
+14 & 9 & 8 & 15 & 12 & 3 & 8 & 11 & 8 & 3 & 4 \\
+7 & 8 & 10 & 4 & 3 & 14 & 7 & 15 & 9 & 5 & 14
+\end{array}\right].
+\]}
+
+\paragraph{5. Pure Exact-Optimal $[[21,14,4]]_{4}$ (\texttt{CodeTables.de}: $3\text{--}4 \to \mathbf{4}$; $\mathbb{F}_4$-Symplectic ($r_S=7$)).} Symplectic stabilizer matrices $X, Z \in \mathbb{F}_{4}^{7 \times 21}$\\
+{\footnotesize\texttt{SHA-256: 1e1f62fb8225d6d7cfbdeccff4c00654a313a8a73356eeb4d4f63f8d04dfbe99}}
+{\scriptsize\[
+X_{4,21,14} = \setlength{\arraycolsep}{2.1pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{21}{r}}
+1 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 2 & 3 & 1 & 3 & 3 & 2 & 0 & 0 & 0 & 1 & 0 & 2 \\
+0 & 1 & 0 & 0 & 0 & 0 & 0 & 3 & 1 & 0 & 2 & 3 & 1 & 3 & 2 & 2 & 0 & 0 & 0 & 1 & 0 \\
+0 & 0 & 1 & 0 & 0 & 0 & 0 & 3 & 3 & 1 & 0 & 2 & 3 & 1 & 0 & 2 & 2 & 0 & 0 & 0 & 1 \\
+0 & 0 & 0 & 1 & 0 & 0 & 0 & 1 & 3 & 3 & 1 & 0 & 2 & 3 & 1 & 0 & 2 & 2 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 1 & 0 & 0 & 3 & 1 & 3 & 3 & 1 & 0 & 2 & 0 & 1 & 0 & 2 & 2 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 1 & 0 & 2 & 3 & 1 & 3 & 3 & 1 & 0 & 0 & 0 & 1 & 0 & 2 & 2 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 2 & 3 & 1 & 3 & 3 & 1 & 0 & 0 & 0 & 1 & 0 & 2 & 2
+\end{array}\right],
+\]
+\[
+Z_{4,21,14} = \setlength{\arraycolsep}{2.1pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{21}{r}}
+1 & 3 & 2 & 1 & 1 & 2 & 3 & 0 & 0 & 2 & 2 & 0 & 1 & 0 & 3 & 0 & 1 & 3 & 0 & 1 & 2 \\
+3 & 1 & 3 & 2 & 1 & 1 & 2 & 0 & 0 & 0 & 2 & 2 & 0 & 1 & 2 & 3 & 0 & 1 & 3 & 0 & 1 \\
+2 & 3 & 1 & 3 & 2 & 1 & 1 & 1 & 0 & 0 & 0 & 2 & 2 & 0 & 1 & 2 & 3 & 0 & 1 & 3 & 0 \\
+1 & 2 & 3 & 1 & 3 & 2 & 1 & 0 & 1 & 0 & 0 & 0 & 2 & 2 & 0 & 1 & 2 & 3 & 0 & 1 & 3 \\
+1 & 1 & 2 & 3 & 1 & 3 & 2 & 2 & 0 & 1 & 0 & 0 & 0 & 2 & 3 & 0 & 1 & 2 & 3 & 0 & 1 \\
+2 & 1 & 1 & 2 & 3 & 1 & 3 & 2 & 2 & 0 & 1 & 0 & 0 & 0 & 1 & 3 & 0 & 1 & 2 & 3 & 0 \\
+3 & 2 & 1 & 1 & 2 & 3 & 1 & 0 & 2 & 2 & 0 & 1 & 0 & 0 & 0 & 1 & 3 & 0 & 1 & 2 & 3
+\end{array}\right].
+\]}
+
+\paragraph{6. Pure Exact-Optimal $[[23,13,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 3-Eigenmode Vandermonde QT ($m=5, \ell=4, b_p=3$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 23}$\\
+{\footnotesize\texttt{SHA-256: 5d6d9eaab2db7840f0ca56511d0dd7829d774dfc479473273aaabed5ee5ea9e3}}
+{\scriptsize\[
+G_{4,23,13} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{23}{r}}
+1 & 0 & 0 & 0 & 0 & 9 & 7 & 2 & 8 & 2 & 11 & 7 & 8 & 11 & 15 & 5 & 10 & 6 & 3 & 12 & 1 & 1 & 1 \\
+0 & 1 & 0 & 0 & 0 & 2 & 9 & 7 & 2 & 8 & 15 & 11 & 7 & 8 & 11 & 12 & 5 & 10 & 6 & 3 & 1 & 8 & 10 \\
+0 & 0 & 1 & 0 & 0 & 8 & 2 & 9 & 7 & 2 & 11 & 15 & 11 & 7 & 8 & 3 & 12 & 5 & 10 & 6 & 1 & 12 & 8 \\
+0 & 0 & 0 & 1 & 0 & 2 & 8 & 2 & 9 & 7 & 8 & 11 & 15 & 11 & 7 & 6 & 3 & 12 & 5 & 10 & 1 & 10 & 15 \\
+0 & 0 & 0 & 0 & 1 & 7 & 2 & 8 & 2 & 9 & 7 & 8 & 11 & 15 & 11 & 10 & 6 & 3 & 12 & 5 & 1 & 15 & 12
+\end{array}\right].
+\]}
+
+\paragraph{7. Pure Exact-Optimal $[[24,14,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 4-Eigenmode Vandermonde QT ($m=5, \ell=4, b_p=4$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 24}$\\
+{\footnotesize\texttt{SHA-256: f1b5bddf1b096fadf29bee867c021d8c941de3381c49f847bf2291410ce69541}}
+{\scriptsize\[
+G_{4,24,14} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{24}{r}}
+1 & 0 & 0 & 0 & 0 & 7 & 15 & 14 & 0 & 7 & 4 & 10 & 7 & 13 & 10 & 15 & 14 & 7 & 6 & 11 & 1 & 2 & 1 & 4 \\
+0 & 1 & 0 & 0 & 0 & 7 & 7 & 15 & 14 & 0 & 10 & 4 & 10 & 7 & 13 & 11 & 15 & 14 & 7 & 6 & 1 & 3 & 10 & 5 \\
+0 & 0 & 1 & 0 & 0 & 0 & 7 & 7 & 15 & 14 & 13 & 10 & 4 & 10 & 7 & 6 & 11 & 15 & 14 & 7 & 1 & 11 & 8 & 9 \\
+0 & 0 & 0 & 1 & 0 & 14 & 0 & 7 & 7 & 15 & 7 & 13 & 10 & 4 & 10 & 7 & 6 & 11 & 15 & 14 & 1 & 7 & 15 & 6 \\
+0 & 0 & 0 & 0 & 1 & 15 & 14 & 0 & 7 & 7 & 10 & 7 & 13 & 10 & 4 & 14 & 7 & 6 & 11 & 15 & 1 & 13 & 12 & 14
+\end{array}\right].
+\]}
+
+\paragraph{8. Pure Exact-Optimal $[[25,15,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; Unbordered Hermitian QT ($m=5, \ell=5$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 25}$\\
+{\footnotesize\texttt{SHA-256: 6198f35bf566e1d75d83af764e8512bf9bb24118d136a3f8ed2978f8b1c0c1e1}}
+{\scriptsize\[
+G_{4,25,15} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{25}{r}}
+1 & 0 & 0 & 0 & 0 & 1 & 13 & 12 & 11 & 15 & 11 & 9 & 3 & 15 & 8 & 9 & 2 & 15 & 3 & 1 & 13 & 10 & 13 & 5 & 2 \\
+0 & 1 & 0 & 0 & 0 & 15 & 1 & 13 & 12 & 11 & 8 & 11 & 9 & 3 & 15 & 1 & 9 & 2 & 15 & 3 & 2 & 13 & 10 & 13 & 5 \\
+0 & 0 & 1 & 0 & 0 & 11 & 15 & 1 & 13 & 12 & 15 & 8 & 11 & 9 & 3 & 3 & 1 & 9 & 2 & 15 & 5 & 2 & 13 & 10 & 13 \\
+0 & 0 & 0 & 1 & 0 & 12 & 11 & 15 & 1 & 13 & 3 & 15 & 8 & 11 & 9 & 15 & 3 & 1 & 9 & 2 & 13 & 5 & 2 & 13 & 10 \\
+0 & 0 & 0 & 0 & 1 & 13 & 12 & 11 & 15 & 1 & 9 & 3 & 15 & 8 & 11 & 2 & 15 & 3 & 1 & 9 & 10 & 13 & 5 & 2 & 13
+\end{array}\right].
+\]}
+
+\paragraph{9. Pure Exact-Optimal $[[26,16,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; Bordered Hermitian QT ($m=5, \ell=5, b_p=1$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 26}$\\
+{\footnotesize\texttt{SHA-256: 739c1d90d60827a52fa2f6d3d6940130f259afffac98fff5dbf421191876acff}}
+{\scriptsize\[
+G_{4,26,16} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{26}{r}}
+1 & 0 & 0 & 0 & 0 & 6 & 13 & 1 & 14 & 0 & 3 & 8 & 4 & 14 & 4 & 7 & 8 & 7 & 3 & 4 & 13 & 3 & 7 & 1 & 0 & 1 \\
+0 & 1 & 0 & 0 & 0 & 0 & 6 & 13 & 1 & 14 & 4 & 3 & 8 & 4 & 14 & 4 & 7 & 8 & 7 & 3 & 0 & 13 & 3 & 7 & 1 & 1 \\
+0 & 0 & 1 & 0 & 0 & 14 & 0 & 6 & 13 & 1 & 14 & 4 & 3 & 8 & 4 & 3 & 4 & 7 & 8 & 7 & 1 & 0 & 13 & 3 & 7 & 1 \\
+0 & 0 & 0 & 1 & 0 & 1 & 14 & 0 & 6 & 13 & 4 & 14 & 4 & 3 & 8 & 7 & 3 & 4 & 7 & 8 & 7 & 1 & 0 & 13 & 3 & 1 \\
+0 & 0 & 0 & 0 & 1 & 13 & 1 & 14 & 0 & 6 & 8 & 4 & 14 & 4 & 3 & 8 & 7 & 3 & 4 & 7 & 3 & 7 & 1 & 0 & 13 & 1
+\end{array}\right].
+\]}
+
+\paragraph{10. Pure Exact-Optimal $[[27,17,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 2-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=2$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 27}$\\
+{\footnotesize\texttt{SHA-256: 0ca33cb9420e15e3a99412afd15ce723d999e94a54c8cb1a593e2862a9389b3a}}
+{\scriptsize\[
+G_{4,27,17} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{27}{r}}
+1 & 0 & 0 & 0 & 0 & 11 & 12 & 5 & 0 & 15 & 6 & 2 & 5 & 13 & 8 & 4 & 14 & 11 & 1 & 11 & 13 & 8 & 0 & 10 & 1 & 1 & 2 \\
+0 & 1 & 0 & 0 & 0 & 15 & 11 & 12 & 5 & 0 & 8 & 6 & 2 & 5 & 13 & 11 & 4 & 14 & 11 & 1 & 1 & 13 & 8 & 0 & 10 & 1 & 7 \\
+0 & 0 & 1 & 0 & 0 & 0 & 15 & 11 & 12 & 5 & 13 & 8 & 6 & 2 & 5 & 1 & 11 & 4 & 14 & 11 & 10 & 1 & 13 & 8 & 0 & 1 & 3 \\
+0 & 0 & 0 & 1 & 0 & 5 & 0 & 15 & 11 & 12 & 5 & 13 & 8 & 6 & 2 & 11 & 1 & 11 & 4 & 14 & 0 & 10 & 1 & 13 & 8 & 1 & 13 \\
+0 & 0 & 0 & 0 & 1 & 12 & 5 & 0 & 15 & 11 & 2 & 5 & 13 & 8 & 6 & 14 & 11 & 1 & 11 & 4 & 8 & 0 & 10 & 1 & 13 & 1 & 11
+\end{array}\right].
+\]}
+
+\paragraph{11. Pure Exact-Optimal $[[28,18,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 3-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=3$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 28}$\\
+{\footnotesize\texttt{SHA-256: a6f6142593e97216b72ad7ee4e7814e094dfad01e3e2dd3f74dfd054d0e914f3}}
+{\scriptsize\[
+G_{4,28,18} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{28}{r}}
+1 & 0 & 0 & 0 & 0 & 1 & 0 & 4 & 13 & 4 & 7 & 15 & 13 & 11 & 3 & 8 & 12 & 5 & 5 & 12 & 15 & 10 & 11 & 1 & 0 & 2 & 1 & 2 \\
+0 & 1 & 0 & 0 & 0 & 4 & 1 & 0 & 4 & 13 & 3 & 7 & 15 & 13 & 11 & 12 & 8 & 12 & 5 & 5 & 0 & 15 & 10 & 11 & 1 & 2 & 8 & 7 \\
+0 & 0 & 1 & 0 & 0 & 13 & 4 & 1 & 0 & 4 & 11 & 3 & 7 & 15 & 13 & 5 & 12 & 8 & 12 & 5 & 1 & 0 & 15 & 10 & 11 & 2 & 12 & 3 \\
+0 & 0 & 0 & 1 & 0 & 4 & 13 & 4 & 1 & 0 & 13 & 11 & 3 & 7 & 15 & 5 & 5 & 12 & 8 & 12 & 11 & 1 & 0 & 15 & 10 & 2 & 10 & 13 \\
+0 & 0 & 0 & 0 & 1 & 0 & 4 & 13 & 4 & 1 & 15 & 13 & 11 & 3 & 7 & 12 & 5 & 5 & 12 & 8 & 10 & 11 & 1 & 0 & 15 & 2 & 15 & 11
+\end{array}\right].
+\]}
+
+\paragraph{12. Pure Exact-Optimal $[[29,19,5]]_{4}$ (\texttt{CodeTables.de}: $4\text{--}5 \to \mathbf{5}$; 4-Eigenmode Vandermonde QT ($m=5, \ell=5, b_p=4$)).} Generator matrix $G \in \mathbb{F}_{16}^{5 \times 29}$\\
+{\footnotesize\texttt{SHA-256: 8d9f9d3a56eaaa7a0e666a37d3854d5147ff796b3d65ed185fd98f701159586b}}
+{\scriptsize\[
+G_{4,29,19} = \setlength{\arraycolsep}{1.95pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{29}{r}}
+1 & 0 & 0 & 0 & 0 & 5 & 13 & 8 & 1 & 13 & 3 & 4 & 6 & 6 & 15 & 10 & 8 & 8 & 10 & 5 & 13 & 1 & 15 & 13 & 8 & 2 & 1 & 2 & 1 \\
+0 & 1 & 0 & 0 & 0 & 13 & 5 & 13 & 8 & 1 & 15 & 3 & 4 & 6 & 6 & 5 & 10 & 8 & 8 & 10 & 8 & 13 & 1 & 15 & 13 & 11 & 15 & 7 & 1 \\
+0 & 0 & 1 & 0 & 0 & 1 & 13 & 5 & 13 & 8 & 6 & 15 & 3 & 4 & 6 & 10 & 5 & 10 & 8 & 8 & 13 & 8 & 13 & 1 & 15 & 13 & 10 & 3 & 1 \\
+0 & 0 & 0 & 1 & 0 & 8 & 1 & 13 & 5 & 13 & 6 & 6 & 15 & 3 & 4 & 8 & 10 & 5 & 10 & 8 & 15 & 13 & 8 & 13 & 1 & 3 & 12 & 13 & 1 \\
+0 & 0 & 0 & 0 & 1 & 13 & 8 & 1 & 13 & 5 & 4 & 6 & 6 & 15 & 3 & 8 & 8 & 10 & 5 & 10 & 1 & 15 & 13 & 8 & 13 & 7 & 8 & 11 & 1
+\end{array}\right].
+\]}
+
+\paragraph{13. Pure Exact-Optimal $[[11,1,6]]_{5}$ (\texttt{CodeTables.de}: $5\text{--}6 \to \mathbf{6}$; Householder Non-GRS QMDS ($m=5$)).} Generator matrix $G \in \mathbb{F}_{25}^{5 \times 11}$\\
+{\footnotesize\texttt{SHA-256: 40b181c8457798ebb3b1d94b0301cfdb716d6da812e208a03fdbb39091f986dd}}
+{\scriptsize\[
+G_{5,11,1} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{11}{r}}
+15 & 2 & 3 & 24 & 21 & 24 & 10 & 1 & 12 & 23 & 23 \\
+1 & 24 & 7 & 10 & 19 & 18 & 6 & 24 & 18 & 21 & 9 \\
+24 & 5 & 20 & 22 & 18 & 14 & 7 & 12 & 4 & 4 & 21 \\
+2 & 16 & 24 & 22 & 18 & 18 & 9 & 4 & 23 & 8 & 4 \\
+22 & 1 & 5 & 2 & 21 & 8 & 17 & 19 & 21 & 10 & 3
+\end{array}\right].
+\]}
+
+\paragraph{14. Pure Exact-Optimal $[[12,0,7]]_{5}$ (\texttt{CodeTables.de}: $6\text{--}7 \to \mathbf{7}$; Householder Self-Dual QMDS ($m=6$)).} Generator matrix $G \in \mathbb{F}_{25}^{6 \times 12}$\\
+{\footnotesize\texttt{SHA-256: 349002c6433a5df3bcc91c07810125852c2c06c55d912f1ee8a66064a9c8620c}}
+{\scriptsize\[
+G_{5,12,0} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{12}{r}}
+1 & 0 & 0 & 0 & 0 & 0 & 22 & 16 & 7 & 7 & 7 & 16 \\
+0 & 1 & 0 & 0 & 0 & 0 & 13 & 18 & 8 & 2 & 24 & 15 \\
+0 & 0 & 1 & 0 & 0 & 0 & 19 & 23 & 20 & 15 & 8 & 8 \\
+0 & 0 & 0 & 1 & 0 & 0 & 7 & 6 & 4 & 1 & 15 & 24 \\
+0 & 0 & 0 & 0 & 1 & 0 & 15 & 22 & 10 & 5 & 16 & 7 \\
+0 & 0 & 0 & 0 & 0 & 1 & 9 & 10 & 3 & 22 & 18 & 12
+\end{array}\right].
+\]}
+
+\paragraph{15. Pure Exact-Optimal $[[15,5,6]]_{8}$ (\texttt{CodeTables.de}: $5\text{--}6 \to \mathbf{6}$; $\lambda$-Constacyclic Hermitian QT ($m=5, \ell=3$)).} Generator matrix $G \in \mathbb{F}_{64}^{5 \times 15}$\\
+{\footnotesize\texttt{SHA-256: bf5e6f2be19edd6b003616272b1213f16b2c4908357d1828fe7cc7a986b618fa}}
+{\scriptsize\[
+G_{8,15,5} = \setlength{\arraycolsep}{2.5pt}\renewcommand{\arraystretch}{0.95}
+\left[\begin{array}{*{15}{r}}
+1 & 0 & 0 & 0 & 0 & 48 & 31 & 38 & 40 & 46 & 23 & 61 & 26 & 11 & 55 \\
+0 & 1 & 0 & 0 & 0 & 13 & 48 & 31 & 38 & 40 & 22 & 23 & 61 & 26 & 11 \\
+0 & 0 & 1 & 0 & 0 & 12 & 13 & 48 & 31 & 38 & 28 & 22 & 23 & 61 & 26 \\
+0 & 0 & 0 & 1 & 0 & 48 & 12 & 13 & 48 & 31 & 58 & 28 & 22 & 23 & 61 \\
+0 & 0 & 0 & 0 & 1 & 26 & 48 & 12 & 13 & 48 & 21 & 58 & 28 & 22 & 23
+\end{array}\right].
+\]}
+
+
+\subsection{Representative High-Distance, Odd-\texorpdfstring{$r_S$}{r\_S}, and \texorpdfstring{$\Delta d = +2$}{Delta d = +2} Parent Codes}
+
+Beyond the $18$ exact-optimal lids, Table~\ref{tab:milestones} highlights representative parent codes across $q \in \{2, 3, 4, 5, 7, 8\}$, including distance-$7$ and distance-$8$ qubit codes ($[[33,11,7]]_2$, $[[34,12,7]]_2$, $[[75,39,8]]_2$), distance-$9$ qutrit and quaternary codes ($[[40,14,9]]_3$, $[[37,13,9]]_4$), distance-$12$ quinary codes ($[[52,20,12]]_5$), odd-$r_S$ symplectic codes up to $d = 13$ ($[[46,11,13]]_8$), $3$-block NSC MP3 codes, and pure distance-$16$ codes with $\Delta d = +2$ leaps up to $n = 100$.
+
+\begin{table}[htbp]
+\centering
+\caption{Selected milestone pure parent stabilizer codes from the $397$-certificate \texttt{v1.2.0} suite (the complete catalog of all $397$ parents appears in Appendix~\ref{app:catalog}).}\label{tab:milestones}
+\vspace{4pt}
+{\footnotesize\setlength{\tabcolsep}{5.2pt}\renewcommand{\arraystretch}{1.08}
+\begin{tabular}{@{}ccccll@{}}
+\toprule
+$q$ & Parent $[[n,k,d]]_q$ & Prev. & \textbf{New} & Construction Family & SHA-256 (12-hex) \\
+\midrule
+$2$ & $[[33,11,7]]_{2}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Unbordered Hermitian QT ($m=11, \ell=3$) & \texttt{ec7fdf4fa65f} \\
+$2$ & $[[34,12,7]]_{2}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Bordered Hermitian QT ($m=11, \ell=3, b_p=1$) & \texttt{f31c1d11f597} \\
+$2$ & $[[49,33,5]]_{2}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & Bordered Hermitian QT ($m=8, \ell=6, b_p=1$) & \texttt{a376c6184aa6} \\
+$2$ & $[[55,33,6]]_{2}$ & $5\text{--}8$ & $\mathbf{6}\text{--}8$ & Unbordered Hermitian QT ($m=11, \ell=5$) & \texttt{e2d8e923a769} \\
+$2$ & $[[75,39,8]]_{2}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & 3-Eigenmode Vandermonde QT ($m=18, \ell=4, b_p=3$) & \texttt{4481bba4930f} \\
+$2$ & $[[75,57,5]]_{2}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & 3-Eigenmode Vandermonde QT ($m=9, \ell=8, b_p=3$) & \texttt{93b3386e8025} \\
+$2$ & $[[77,47,7]]_{2}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & 2-Eigenmode Vandermonde QT ($m=15, \ell=5, b_p=2$) & \texttt{83bb955ae54e} \\
+\midrule
+$3$ & $[[40,14,9]]_{3}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Bordered Hermitian QT ($m=13, \ell=3, b_p=1$) & \texttt{07be7f96eea9} \\
+$3$ & $[[42,22,7]]_{3}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & 2-Eigenmode Vandermonde QT ($m=10, \ell=4, b_p=2$) & \texttt{d008eb0c897a} \\
+$3$ & $[[49,25,8]]_{3}$ & $7\text{--}11$ & $\mathbf{8}\text{--}11$ & Bordered Hermitian QT ($m=12, \ell=4, b_p=1$) & \texttt{d595403c602e} \\
+\midrule
+$4$ & $[[37,13,9]]_{4}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Bordered Hermitian QT ($m=12, \ell=3, b_p=1$) & \texttt{844a7b290c03} \\
+$4$ & $[[56,28,9]]_{4}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Unbordered Hermitian QT ($m=14, \ell=4$) & \texttt{a7467c552ecb} \\
+$4$ & $[[57,29,9]]_{4}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Bordered Hermitian QT ($m=14, \ell=4, b_p=1$) & \texttt{f252eda98960} \\
+$4$ & $[[57,32,8]]_{4}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & $\mathbb{F}_4$-Symplectic ($r_S=25$) & \texttt{ede8697736c4} \\
+\midrule
+$5$ & $[[36,7,11]]_{5}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Odd-$r_S$ $\mathbb{F}_{5}$-Symplectic ($r_S=29$) & \texttt{07dee9c046e9} \\
+$5$ & $[[45,15,11]]_{5}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Unbordered Hermitian QT ($m=15, \ell=3$) & \texttt{5d69df9f13bc} \\
+$5$ & $[[52,18,12]]_{5}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & 2-Block Quasi-Unitary MP2 ($m=17$) & \texttt{1f4ca8f3a342} \\
+$5$ & $[[52,20,12]]_{5}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & 2-Block Quasi-Unitary MP2 ($m=16$) & \texttt{cfad6aa21089} \\
+$5$ & $[[72,44,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & 3-Block NSC Quasi-Unitary MP3 ($m=14$) & \texttt{a1899cd8cdfd} \\
+$5$ & $[[75,47,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & 3-Block NSC Quasi-Unitary MP3 ($m=14$) & \texttt{569aa2bdbed7} \\
+\midrule
+$7$ & $[[42,14,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Unbordered Hermitian QT ($m=14, \ell=3$) & \texttt{f1217ed31465} \\
+$7$ & $[[49,17,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Bordered Hermitian QT ($m=16, \ell=3, b_p=1$) & \texttt{6f55e6cb050d} \\
+$7$ & $[[56,18,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & 2-Block Quasi-Unitary MP2 ($m=19$) & \texttt{b247b9fbe320} \\
+$7$ & $[[60,22,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & 2-Block Quasi-Unitary MP2 ($m=19$) & \texttt{d902c991a691} \\
+$7$ & $[[100,56,16]]_{7}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & 2-Block Quasi-Unitary MP2 ($\Delta d = +2$) & \texttt{2a7269810676} \\
+$7$ & $[[100,58,15]]_{7}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & 2-Block Quasi-Unitary MP2 ($m=21$) & \texttt{230e5e48be47} \\
+\midrule
+$8$ & $[[36,9,11]]_{8}$ & $10\text{--}14$ & $\mathbf{11}\text{--}14$ & Odd-$r_S$ $\mathbb{F}_{8}$-Symplectic ($r_S=27$) & \texttt{80cbd40f3fac} \\
+$8$ & $[[37,10,11]]_{8}$ & $10\text{--}14$ & $\mathbf{11}\text{--}14$ & Odd-$r_S$ $\mathbb{F}_{8}$-Symplectic ($r_S=27$) & \texttt{6cbeeb7ca1e9} \\
+$8$ & $[[45,11,13]]_{8}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & $\mathbb{F}_8$-Symplectic ($r_S=34$) & \texttt{ce69191db906} \\
+$8$ & $[[46,11,13]]_{8}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Odd-$r_S$ $\mathbb{F}_{8}$-Symplectic ($r_S=35$) & \texttt{62f5ea8b5e37} \\
+$8$ & $[[47,18,11]]_{8}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Odd-$r_S$ $\mathbb{F}_{8}$-Symplectic ($r_S=29$) & \texttt{2ed2c961bbdd} \\
+$8$ & $[[64,20,16]]_{8}$ & $15\text{--}23$ & $\mathbf{16}\text{--}23$ & 2-Block Quasi-Unitary MP2 ($m=22$) & \texttt{0b9190068aca} \\
+$8$ & $[[72,28,16]]_{8}$ & $15\text{--}23$ & $\mathbf{16}\text{--}23$ & 2-Block Quasi-Unitary MP2 ($m=22$) & \texttt{259fe38afae1} \\
+$8$ & $[[76,32,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & 2-Block Quasi-Unitary MP2 ($\Delta d = +2$) & \texttt{23c3ba18b107} \\
+$8$ & $[[80,36,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & 2-Block Quasi-Unitary MP2 ($\Delta d = +2$) & \texttt{5fb2236aa682} \\
+$8$ & $[[82,38,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & 2-Block Quasi-Unitary MP2 ($\Delta d = +2$) & \texttt{69517da74505} \\
+$8$ & $[[84,40,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & 2-Block Quasi-Unitary MP2 ($\Delta d = +2$) & \texttt{d0b2f07828e9} \\
+$8$ & $[[86,42,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & 2-Block Quasi-Unitary MP2 ($\Delta d = +2$) & \texttt{9e89413a11c4} \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+\section{Purity-Preserving Propagation and Clean-Room Verification}\label{sec:verification}
+
+\subsection{Two-Tier Accounting: Strictly Pure Closure vs.\ Terminal Extension}
+
+From each verified \emph{pure} $[[n, k, d]]_q$ parent stabilizer code ($d \ge 3$), standard quantum propagation operators~\cite[Theorem~6]{Calderbank1998} and~\cite[Lemmas~69--72]{Ketkar2006} fall into two distinct purity classes:
+\begin{enumerate}\small
+  \item \textbf{Purity-Preserving Operators ($\mathrm{PureSubcode}$, $\mathrm{Puncture}$, $\mathrm{Shorten}$):}
+  \begin{itemize}
+    \item $\mathrm{PureSubcode}$ ($1 \le s \le k$): Promoting $s$ independent pure logical operators into the stabilizer yields a \emph{pure} $[[n, k - s, \ge d]]_q$ code.
+    \item $\mathrm{Puncture}$ ($1 \le s \le d - 2$, $n - s \ge \max(1, k)$): Puncturing $s$ qudits of a pure $[[n, k, d]]_q$ code yields a \emph{pure} $[[n - s, k, \ge d - s]]_q$ code.
+    \item $\mathrm{Shorten}$ ($1 \le s \le d - 2$, $n - s \ge k + s$): Shortening $s$ qudits of a pure $[[n, k, d]]_q$ code yields a \emph{pure} $[[n - s, k + s, \ge d - s]]_q$ code.
+  \end{itemize}
+  \item \textbf{Impure Terminal Ancilla Extension ($\mathrm{Extend}$):} Appending $s \ge 1$ ancilla qudits stabilized by $Z^{\otimes s}$ yields a valid $[[n + s, k, \ge d]]_q$ stabilizer code containing weight-$1$ stabilizers (hence impure whenever $d \ge 2$).
+\end{enumerate}
+Because $\mathrm{PureSubcode}$ requires purity ($d(C_S) \ge d$) whereas $\mathrm{Extend}$ introduces weight-$1$ stabilizers, $\mathrm{PureSubcode}$ (and similarly $\mathrm{Puncture}$/$\mathrm{Shorten}$) must \emph{never} be applied after $\mathrm{Extend}$. Accordingly, both \path{CODETABLES_V1_2_IMPACT_REPORT.json} and \texttt{verify\_all\_qecc.py} audit two separate closure tiers:
+\begin{itemize}\small
+  \item \textbf{Tier~1 --- Strictly Pure Closure (`Pure Closure'):} Iterating only $\{\mathrm{PureSubcode}, \mathrm{Puncture}, \mathrm{Shorten}\}$ on the $397$ pure parents until convergence strictly improves \textbf{1,450} entries in \texttt{CodeTables.de} as \emph{pure} stabilizer codes and closes \textbf{16} entries to exact optimality.
+  \item \textbf{Tier~2 --- Full Purity-Respecting Closure (`Full Closure'):} Applying $\mathrm{Extend}(\cdot, +s)$ solely as a terminal step to the Tier~1 pure codes reaches \textbf{204} additional entries (including $2$ exact-optimal closures: $[[37,26,4]]_2$ from $[[36,26,4]]_2$ and $[[12,3,5]]_4$ from $[[11,3,5]]_4$, while further raising $54$ Tier~1 cells by an extra $+1$), yielding $\mathbf{1{,}450 + 204 = 1{,}654}$ improved entries and $\mathbf{16 + 2 = 18}$ exact-optimal closures in total (compared with $\mathbf{1{,}575}$ improved entries when restricting all four operators to a single step from the $397$ parents).
+\end{itemize}
+
+\subsection{Zero-Symmetry Clean-Room Verification and Data Availability}
+
+To rule out any bug in finite-field tables, polynomial/Fourier algebra, or GPU kernel indexing, every single one of the $397$ parent certificates was verified from raw generator matrix entries without assuming any cyclic, constacyclic, Reed--Solomon, or group symmetry by three independent software stacks:
+\begin{enumerate}\small
+  \item \textbf{Four Zero-Shared-Code 20-Thread Rust Clean-Room Verifiers (\texttt{verifiers/*.rs}):}
+  \begin{itemize}
+    \item \texttt{verify\_hermitian\_universal.rs}: Self-tests all $\mathbb{F}_{q^2}$ field axioms and Hexacode ground truths, verifies $\mathrm{rank}_{\mathbb{F}_{q^2}}(G) = m$ and $G G^\dagger = \vb{0}$, and exhaustively proves every $(d - 1)$-column subset of $G$ is linearly independent via branchless SWAR \texttt{[u128; 3]} XOR Gaussian elimination (characteristic~$2$) and pre-scaled basis tables (odd characteristic).
+    \item \texttt{verify\_symplectic\_universal.rs}: Independently constructs $\mathbb{F}_q$, verifies $\mathrm{rank}_{\mathbb{F}_q}([X \mid Z]) = r_S$ and $X Z^\top - Z X^\top = \vb{0}$, and proves $\mathrm{rank}_{\mathbb{F}_q}([X_{\cdot, S} \mid Z_{\cdot, S}]) = 2(d - 1)$ across all $\binom{n}{d-1}$ subsets $S$ with dynamic $5$-tuple work stealing.
+    \item \texttt{verify\_mp2\_cleanroom.rs} and \texttt{verify\_mp3\_cleanroom.rs}: Verify the exact block identities of Theorem~\ref{thm:mp23}, full rank, $G G^\dagger = \vb{0}$, NSC non-degeneracy ($D_{1,j} E_j \ne D_{2,j}$), and exhaustive component dual distances $d(C_1^{\perp_H}) \ge d$, $2d(C_2^{\perp_H}) \ge d$, and $3d(C_3^{\perp_H}) \ge d$.
+  \end{itemize}
+  \item \textbf{Standalone Python + NumPy Audit (\texttt{verify\_all\_qecc.py}):} Verifies all $397$ SHA-256 digests, algebraic orthogonality/rank/NSC identities, Rust distance proofs, and the exact $1{,}575$ / $1{,}450$ / $1{,}654$ / $18$ ($16$P+$2$E) \texttt{CodeTables.de} propagation counts.
+  \item \textbf{Native Magma Scripts (\texttt{magma/verify\_all\_18\_exact\_optimal.m} \& \texttt{magma/verify\_all\_397\_parents.m}):} Verify every parent code directly via Magma's native \texttt{HermitianDual}, \texttt{MinimumWeight}, and \texttt{QuantumCode} intrinsics.
+\end{enumerate}
+All $397$ JSON certificates, machine-readable impact reports (\path{CODETABLES_V1_2_IMPACT_REPORT.json}), Rust/Python/Magma verifiers, and CUDA search solvers are openly archived at \url{https://github.com/ramuza0113-sketch/qecc-codetables-2026} and Zenodo Concept DOI \href{https://doi.org/10.5281/zenodo.24513985}{\texttt{doi:10.5281/zenodo.24513985}}.
+
+\begin{thebibliography}{99}
 
 \bibitem{Ashikhmin2001}
 A.~Ashikhmin and E.~Knill,
 ``Nonbinary quantum stabilizer codes,''
 \emph{IEEE Trans.\ Inf.\ Theory}, vol.~47, no.~7, pp.~3065--3072, Nov.\ 2001.
 
+\bibitem{Ball2021}
+S.~Ball,
+``Some constructions of quantum MDS codes,''
+\emph{Des.\ Codes Cryptogr.}, vol.~89, pp.~811--821, 2021.
+
+\bibitem{Blackmore2001}
+T.~Blackmore and G.~H.~Norton,
+``Matrix-product codes over $\mathbb{F}_q$,''
+\emph{Appl.\ Algebra Eng.\ Commun.\ Comput.}, vol.~12, pp.~477--500, 2001.
+
 \bibitem{Calderbank1998}
 A.~R.~Calderbank, E.~M.~Rains, P.~M.~Shor, and N.~J.~A.~Sloane,
 ``Quantum error correction via codes over $\mathrm{GF}(4)$,''
 \emph{IEEE Trans.\ Inf.\ Theory}, vol.~44, no.~4, pp.~1369--1387, Jul.\ 1998.
 
+\bibitem{Dieudonne1963}
+J.~Dieudonn\'e,
+\emph{La G\'eom\'etrie des Groupes Classiques}, 2nd~ed.
+Berlin, Germany: Springer-Verlag, 1963.
+
 \bibitem{Grassl2007}
 M.~Grassl,
 ``Bounds on the minimum distance of linear codes and quantum codes,''
-Online available at \url{http://www.codetables.de}, accessed Nov.\ 25, 2026.
+Online database at \url{http://www.codetables.de}, snapshot verified Nov.\ 2026.
+
+\bibitem{Hernando2009}
+F.~Hernando, K.~Lally, and D.~Ruano,
+``Construction and decoding of matrix-product codes from nested codes,''
+\emph{Appl.\ Algebra Eng.\ Commun.\ Comput.}, vol.~20, pp.~497--507, 2009.
 
 \bibitem{Ketkar2006}
 A.~Ketkar, A.~Klappenecker, S.~Kumar, and P.~K.~Sarvepalli,
 ``Nonbinary stabilizer codes over finite fields,''
 \emph{IEEE Trans.\ Inf.\ Theory}, vol.~52, no.~11, pp.~4892--4914, Nov.\ 2006.
 
+\bibitem{Rains1999}
+E.~M.~Rains,
+``Nonbinary quantum codes,''
+\emph{IEEE Trans.\ Inf.\ Theory}, vol.~45, no.~6, pp.~1827--1832, Sep.\ 1999.
+
 \end{thebibliography}
+
+\newpage
+\appendix
+\section{Complete Catalog of All 397 Pure Parent Stabilizer Certificates}\label{app:catalog}
+
+Table~\ref{tab:all397} lists every explicit pure parent certificate $\texttt{QECC\_q}\{q\}\texttt{\_n}\{n\}\texttt{\_k}\{k\}\texttt{\_d}\{d\}\texttt{.json}$ included in \texttt{v1.2.0}, ordered by $(q, n, k)$. Entries marked $^\star$ close \texttt{CodeTables.de} directly to exact optimality ($d_{\mathrm{low}} = d_{\mathrm{up}}$), and all SHA-256 digests are shown uniformly by their leading $12$ hexadecimal characters.
+
+{\footnotesize\setlength{\tabcolsep}{8.0pt}\renewcommand{\arraystretch}{1.05}
+\begin{longtable}{@{}rccccl@{}}
+\caption{Complete catalog of all $397$ pure parent quantum stabilizer certificates (\texttt{v1.2.0}).}\label{tab:all397}\\
+\toprule
+\# & Parent $[[n,k,d]]_q$ & Prev.\ Bound & \textbf{New Bound} & Architecture & SHA-256 (12-hex) \\
+\midrule
+\endfirsthead
+\multicolumn{6}{c}{\tablename\ \thetable\ -- \emph{Continued from previous page}} \\
+\toprule
+\# & Parent $[[n,k,d]]_q$ & Prev.\ Bound & \textbf{New Bound} & Architecture & SHA-256 (12-hex) \\
+\midrule
+\endhead
+\midrule
+\multicolumn{6}{r}{\emph{Continued on next page}} \\
+\endfoot
+\bottomrule
+\endlastfoot
+1 & $[[33,11,7]]_{2}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=11$) & \texttt{ec7fdf4fa65f} \\
+2 & $[[34,12,7]]_{2}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=11$) & \texttt{f31c1d11f597} \\
+3 & $[[36,26,4]]_{2}^\star$ & $3\text{--}4$ & $\mathbf{4}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{579c5890fd4c} \\
+4 & $[[49,33,5]]_{2}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & Direct Hermitian ($m=8$) & \texttt{a376c6184aa6} \\
+5 & $[[55,33,6]]_{2}$ & $5\text{--}8$ & $\mathbf{6}\text{--}8$ & Direct Hermitian ($m=11$) & \texttt{e2d8e923a769} \\
+6 & $[[75,39,8]]_{2}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Hermitian ($m=18$) & \texttt{4481bba4930f} \\
+7 & $[[75,57,5]]_{2}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & Direct Hermitian ($m=9$) & \texttt{93b3386e8025} \\
+8 & $[[77,47,7]]_{2}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Hermitian ($m=15$) & \texttt{83bb955ae54e} \\
+\midrule
+9 & $[[13,1,6]]_{3}^\star$ & $5\text{--}6$ & $\mathbf{6}$ (Exact) & Direct Hermitian ($m=6$) & \texttt{b6ddad35b344} \\
+10 & $[[20,10,5]]_{3}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{4be77100499b} \\
+11 & $[[40,14,9]]_{3}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Direct Hermitian ($m=13$) & \texttt{07be7f96eea9} \\
+12 & $[[42,22,7]]_{3}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Direct Hermitian ($m=10$) & \texttt{d008eb0c897a} \\
+13 & $[[49,25,8]]_{3}$ & $7\text{--}11$ & $\mathbf{8}\text{--}11$ & Direct Hermitian ($m=12$) & \texttt{d595403c602e} \\
+\midrule
+14 & $[[11,3,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=4$) & \texttt{440b445eb310} \\
+15 & $[[18,6,6]]_{4}$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & Direct Hermitian ($m=6$) & \texttt{17224a6584e9} \\
+16 & $[[19,7,6]]_{4}$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & Direct Hermitian ($m=6$) & \texttt{cc69171ee33f} \\
+17 & $[[20,10,5]]_{4}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & Direct Hermitian ($m=5$) & \texttt{03a0cde8eac4} \\
+18 & $[[21,14,4]]_{4}^\star$ & $3\text{--}4$ & $\mathbf{4}$ (Exact) & Direct Symplectic ($r_S=7$) & \texttt{1e1f62fb8225} \\
+19 & $[[23,13,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{5d6d9eaab2db} \\
+20 & $[[24,8,7]]_{4}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=8$) & \texttt{ea7fa3b41aea} \\
+21 & $[[24,14,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{f1b5bddf1b09} \\
+22 & $[[25,9,7]]_{4}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=8$) & \texttt{f4f281398af4} \\
+23 & $[[25,15,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{6198f35bf566} \\
+24 & $[[26,16,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{739c1d90d608} \\
+25 & $[[27,17,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{0ca33cb9420e} \\
+26 & $[[28,18,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{a6f6142593e9} \\
+27 & $[[29,19,5]]_{4}^\star$ & $4\text{--}5$ & $\mathbf{5}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{8d9f9d3a56ea} \\
+28 & $[[37,13,9]]_{4}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Direct Hermitian ($m=12$) & \texttt{844a7b290c03} \\
+29 & $[[45,27,7]]_{4}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Direct Hermitian ($m=9$) & \texttt{831d45cd4811} \\
+30 & $[[54,42,5]]_{4}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & Direct Hermitian ($m=6$) & \texttt{30c520ad00a3} \\
+31 & $[[55,35,7]]_{4}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Hermitian ($m=10$) & \texttt{e43a07b8f7bc} \\
+32 & $[[56,28,9]]_{4}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Direct Hermitian ($m=14$) & \texttt{a7467c552ecb} \\
+33 & $[[56,40,6]]_{4}$ & $5\text{--}8$ & $\mathbf{6}\text{--}8$ & Direct Hermitian ($m=8$) & \texttt{510af74bdb2e} \\
+34 & $[[57,29,9]]_{4}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Direct Hermitian ($m=14$) & \texttt{f252eda98960} \\
+35 & $[[57,32,8]]_{4}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Symplectic ($r_S=25$) & \texttt{ede8697736c4} \\
+36 & $[[57,36,7]]_{4}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Symplectic ($r_S=21$) & \texttt{855b5345ece0} \\
+37 & $[[57,41,6]]_{4}$ & $5\text{--}8$ & $\mathbf{6}\text{--}8$ & Direct Hermitian ($m=8$) & \texttt{961b154a3fc0} \\
+38 & $[[57,45,5]]_{4}$ & $4\text{--}6$ & $\mathbf{5}\text{--}6$ & Direct Hermitian ($m=6$) & \texttt{b529c53895b4} \\
+39 & $[[58,37,7]]_{4}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Symplectic ($r_S=21$) & \texttt{38890db3a0cf} \\
+40 & $[[70,50,7]]_{4}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Hermitian ($m=10$) & \texttt{4b69efdcaa7f} \\
+41 & $[[71,51,7]]_{4}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Hermitian ($m=10$) & \texttt{41bb8b72c30c} \\
+42 & $[[72,48,8]]_{4}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Hermitian ($m=12$) & \texttt{07b7a28d4804} \\
+\midrule
+43 & $[[11,1,6]]_{5}^\star$ & $5\text{--}6$ & $\mathbf{6}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{40b181c84577} \\
+44 & $[[12,0,7]]_{5}^\star$ & $6\text{--}7$ & $\mathbf{7}$ (Exact) & Direct Hermitian ($m=6$) & \texttt{349002c6433a} \\
+45 & $[[19,7,6]]_{5}$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & Direct Hermitian ($m=6$) & \texttt{9fa484151233} \\
+46 & $[[21,7,7]]_{5}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=7$) & \texttt{cd88c7f21f80} \\
+47 & $[[24,12,6]]_{5}$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & Direct Hermitian ($m=6$) & \texttt{dabbb85aa7a7} \\
+48 & $[[25,13,6]]_{5}$ & $5\text{--}7$ & $\mathbf{6}\text{--}7$ & Direct Hermitian ($m=6$) & \texttt{7555e1d33fac} \\
+49 & $[[28,10,8]]_{5}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Direct Hermitian ($m=9$) & \texttt{dcb307e995ca} \\
+50 & $[[30,5,10]]_{5}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Direct Symplectic ($r_S=25$) & \texttt{510ce5f67f86} \\
+51 & $[[32,16,7]]_{5}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Direct Hermitian ($m=8$) & \texttt{a2e90ae2c92b} \\
+52 & $[[33,17,7]]_{5}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=8$) & \texttt{964e83d397a3} \\
+53 & $[[34,12,9]]_{5}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Direct Hermitian ($m=11$) & \texttt{c3106a486240} \\
+54 & $[[34,14,8]]_{5}$ & $7\text{--}11$ & $\mathbf{8}\text{--}11$ & Quasi-Unitary MP2 ($m=10$) & \texttt{a1bfa4ee6774} \\
+55 & $[[36,7,11]]_{5}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Direct Symplectic ($r_S=29$) & \texttt{07dee9c046e9} \\
+56 & $[[44,18,10]]_{5}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{cd7591af6d49} \\
+57 & $[[45,15,11]]_{5}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Direct Hermitian ($m=15$) & \texttt{5d69df9f13bc} \\
+58 & $[[46,16,11]]_{5}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Direct Hermitian ($m=15$) & \texttt{627881e16826} \\
+59 & $[[46,20,10]]_{5}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{f48a2810fed8} \\
+60 & $[[46,22,9]]_{5}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{4f6cf22f0e7f} \\
+61 & $[[46,26,8]]_{5}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{4f3fc794752d} \\
+62 & $[[48,22,10]]_{5}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{cb701b16fdff} \\
+63 & $[[50,24,10]]_{5}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{5ad769a792f6} \\
+64 & $[[52,18,12]]_{5}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=17$) & \texttt{1f4ca8f3a342} \\
+65 & $[[52,20,12]]_{5}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{cfad6aa21089} \\
+66 & $[[52,32,8]]_{5}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{753de4057f54} \\
+67 & $[[58,31,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Direct Symplectic ($r_S=27$) & \texttt{37b174e8dff3} \\
+68 & $[[58,35,8]]_{5}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Symplectic ($r_S=23$) & \texttt{072de69d8b30} \\
+69 & $[[60,30,10]]_{5}$ & $9\text{--}15$ & $\mathbf{10}\text{--}15$ & Direct Hermitian ($m=15$) & \texttt{f3dc7647ddb2} \\
+70 & $[[70,42,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Direct Hermitian ($m=14$) & \texttt{bb3392704be0} \\
+71 & $[[71,43,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Direct Hermitian ($m=14$) & \texttt{3f3a32c00ca4} \\
+72 & $[[72,44,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Quasi-Unitary MP3 ($m=14$) & \texttt{a1899cd8cdfd} \\
+73 & $[[72,48,8]]_{5}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Hermitian ($m=12$) & \texttt{80a048d088b2} \\
+74 & $[[73,49,8]]_{5}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Hermitian ($m=12$) & \texttt{f5594b934cd9} \\
+75 & $[[75,47,9]]_{5}$ & $8\text{--}14$ & $\mathbf{9}\text{--}14$ & Quasi-Unitary MP3 ($m=14$) & \texttt{569aa2bdbed7} \\
+76 & $[[76,52,8]]_{5}$ & $7\text{--}12$ & $\mathbf{8}\text{--}12$ & Direct Hermitian ($m=12$) & \texttt{829a76802fb5} \\
+77 & $[[83,61,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Symplectic ($r_S=22$) & \texttt{f71b5673d2fe} \\
+78 & $[[84,61,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Symplectic ($r_S=23$) & \texttt{86b23b292972} \\
+79 & $[[84,63,7]]_{5}$ & $6\text{--}10$ & $\mathbf{7}\text{--}10$ & Direct Symplectic ($r_S=21$) & \texttt{ffdc2fc24e50} \\
+80 & $[[85,63,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Symplectic ($r_S=22$) & \texttt{ff8545e9bd48} \\
+81 & $[[86,64,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Symplectic ($r_S=22$) & \texttt{c3f7390fbc8a} \\
+82 & $[[93,71,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Symplectic ($r_S=22$) & \texttt{a6071713a6e0} \\
+83 & $[[94,72,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Symplectic ($r_S=22$) & \texttt{fdecdec3ce82} \\
+84 & $[[99,77,7]]_{5}$ & $6\text{--}11$ & $\mathbf{7}\text{--}11$ & Direct Hermitian ($m=11$) & \texttt{d1aed26b04c8} \\
+\midrule
+85 & $[[21,7,7]]_{7}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=7$) & \texttt{6a53ddd351fd} \\
+86 & $[[22,8,7]]_{7}$ & $6\text{--}8$ & $\mathbf{7}\text{--}8$ & Direct Hermitian ($m=7$) & \texttt{d78ddd233bd9} \\
+87 & $[[28,7,9]]_{7}$ & $8\text{--}11$ & $\mathbf{9}\text{--}11$ & Direct Symplectic ($r_S=21$) & \texttt{169f15af10fb} \\
+88 & $[[31,11,9]]_{7}$ & $8\text{--}11$ & $\mathbf{9}\text{--}11$ & Direct Hermitian ($m=10$) & \texttt{2a988f4eedc0} \\
+89 & $[[37,13,10]]_{7}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Direct Hermitian ($m=12$) & \texttt{7d03ab621a1e} \\
+90 & $[[37,19,8]]_{7}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Direct Hermitian ($m=9$) & \texttt{c15112c4dc25} \\
+91 & $[[42,14,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Direct Hermitian ($m=14$) & \texttt{f1217ed31465} \\
+92 & $[[43,15,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Direct Hermitian ($m=14$) & \texttt{11e3817ea9c1} \\
+93 & $[[49,17,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Direct Hermitian ($m=16$) & \texttt{6f55e6cb050d} \\
+94 & $[[52,20,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{25d76bf59eee} \\
+95 & $[[54,22,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{fcc7e1633072} \\
+96 & $[[54,24,11]]_{7}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{be5e6478627b} \\
+97 & $[[54,28,10]]_{7}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{5b366d60cd47} \\
+98 & $[[56,18,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{b247b9fbe320} \\
+99 & $[[56,24,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{7ed0782af6ed} \\
+100 & $[[56,26,11]]_{7}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{d8c55b49d897} \\
+101 & $[[56,30,10]]_{7}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{8eb093441c98} \\
+102 & $[[56,32,9]]_{7}$ & $8\text{--}13$ & $\mathbf{9}\text{--}13$ & Quasi-Unitary MP2 ($m=12$) & \texttt{84927d192d79} \\
+103 & $[[58,26,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{44aafbe77eaf} \\
+104 & $[[58,32,10]]_{7}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{c4b41034a637} \\
+105 & $[[60,22,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{d902c991a691} \\
+106 & $[[60,24,13]]_{7}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{f21ef0a913e6} \\
+107 & $[[60,28,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{77aca03b951c} \\
+108 & $[[60,34,10]]_{7}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{1ddd41a45113} \\
+109 & $[[60,36,9]]_{7}$ & $8\text{--}13$ & $\mathbf{9}\text{--}13$ & Quasi-Unitary MP2 ($m=12$) & \texttt{6dc6e304afc9} \\
+110 & $[[62,24,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{7e9260e912b5} \\
+111 & $[[62,26,13]]_{7}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{dd253f945315} \\
+112 & $[[62,30,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{5b86b3416c58} \\
+113 & $[[62,36,10]]_{7}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{2114d8a3ff8d} \\
+114 & $[[62,38,9]]_{7}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{44a7830e8a5f} \\
+115 & $[[64,26,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{5048966bc0e0} \\
+116 & $[[64,28,13]]_{7}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{6cbed08da910} \\
+117 & $[[64,32,12]]_{7}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{8788cfa13e7b} \\
+118 & $[[64,34,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{2ca6670f5665} \\
+119 & $[[64,38,10]]_{7}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{0bce61b1c50c} \\
+120 & $[[64,40,9]]_{7}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{7002615cdeaa} \\
+121 & $[[66,28,14]]_{7}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{6266d1bfc108} \\
+122 & $[[66,30,13]]_{7}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{25f8219ee38c} \\
+123 & $[[66,34,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{c9be4d882a7a} \\
+124 & $[[66,36,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{6168d2fb44df} \\
+125 & $[[66,40,10]]_{7}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{d2dfbd43f8cc} \\
+126 & $[[68,30,14]]_{7}$ & $13\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{6abe88462535} \\
+127 & $[[68,32,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{d7bd99c75530} \\
+128 & $[[68,36,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{e80323e59fa2} \\
+129 & $[[68,38,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{8a00c419adc2} \\
+130 & $[[70,32,14]]_{7}$ & $13\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{f3d8c71af53e} \\
+131 & $[[70,34,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{8277f8f03482} \\
+132 & $[[70,38,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{8808342d8c45} \\
+133 & $[[70,40,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{d4025941f8e7} \\
+134 & $[[72,34,14]]_{7}$ & $13\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{4665256dc360} \\
+135 & $[[72,36,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{c691bec0fa16} \\
+136 & $[[72,40,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{075322784051} \\
+137 & $[[72,42,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{29960b6e14b3} \\
+138 & $[[74,36,14]]_{7}$ & $13\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{5d09a0ee1fd8} \\
+139 & $[[74,38,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{6f9dc8e10f8e} \\
+140 & $[[74,42,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{182ee715bc40} \\
+141 & $[[74,44,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{b4c5caebcb3a} \\
+142 & $[[76,38,14]]_{7}$ & $13\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{63abdf260c14} \\
+143 & $[[76,40,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{8150153d2b6d} \\
+144 & $[[76,44,12]]_{7}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{b1c71b5a8331} \\
+145 & $[[76,46,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{85d409c0738b} \\
+146 & $[[78,40,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{ce0d1b613615} \\
+147 & $[[78,42,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{02481623fb40} \\
+148 & $[[78,46,12]]_{7}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{ac13bc6d83de} \\
+149 & $[[78,48,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{a8a52aaf5991} \\
+150 & $[[80,42,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{50d03d7f36ef} \\
+151 & $[[80,44,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{5c6d0f735ad0} \\
+152 & $[[80,48,12]]_{7}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{435bafa19551} \\
+153 & $[[80,50,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{a5a46eea2222} \\
+154 & $[[82,44,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{bd2d6bcd9ee3} \\
+155 & $[[82,46,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{c226d6b001a6} \\
+156 & $[[82,50,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{94cdd3491229} \\
+157 & $[[84,46,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{874252240ce0} \\
+158 & $[[84,48,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{9a8b18ede71f} \\
+159 & $[[86,48,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{b5827b41b4b2} \\
+160 & $[[86,50,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{70f6f11543e9} \\
+161 & $[[86,54,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{fcf528fe8076} \\
+162 & $[[86,56,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{cd052f1179f2} \\
+163 & $[[88,50,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{0fbadeda6450} \\
+164 & $[[88,52,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{bef499a0bd8e} \\
+165 & $[[88,56,12]]_{7}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{54b0d18623a4} \\
+166 & $[[88,58,11]]_{7}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{7442024e31f7} \\
+167 & $[[90,52,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{13fa6fc6078d} \\
+168 & $[[90,54,13]]_{7}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{3832517299f5} \\
+169 & $[[90,58,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{5fe706eb0fc9} \\
+170 & $[[92,54,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{f99214bddd67} \\
+171 & $[[92,56,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{874afd6fd5e8} \\
+172 & $[[92,60,12]]_{7}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{3c9cfdf204bb} \\
+173 & $[[94,56,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{9e2d0e0f7c99} \\
+174 & $[[94,58,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{0e581328c66b} \\
+175 & $[[96,58,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{3529b3bb477a} \\
+176 & $[[96,60,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{16da43b614af} \\
+177 & $[[98,60,14]]_{7}$ & $13\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{226820b9cfa1} \\
+178 & $[[98,62,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{280816146de1} \\
+179 & $[[100,56,16]]_{7}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{2a7269810676} \\
+180 & $[[100,58,15]]_{7}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{230e5e48be47} \\
+181 & $[[100,62,14]]_{7}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{34a68e3b08c5} \\
+182 & $[[100,64,13]]_{7}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{63529bdf030f} \\
+\midrule
+183 & $[[15,5,6]]_{8}^\star$ & $5\text{--}6$ & $\mathbf{6}$ (Exact) & Direct Hermitian ($m=5$) & \texttt{bf5e6f2be19e} \\
+184 & $[[20,2,9]]_{8}$ & $8\text{--}10$ & $\mathbf{9}\text{--}10$ & Direct Hermitian ($m=9$) & \texttt{eb8a868ab21b} \\
+185 & $[[20,3,8]]_{8}$ & $7\text{--}9$ & $\mathbf{8}\text{--}9$ & Direct Symplectic ($r_S=17$) & \texttt{086d963a7e5f} \\
+186 & $[[30,10,9]]_{8}$ & $8\text{--}11$ & $\mathbf{9}\text{--}11$ & Direct Hermitian ($m=10$) & \texttt{0a30285b0098} \\
+187 & $[[31,11,9]]_{8}$ & $8\text{--}11$ & $\mathbf{9}\text{--}11$ & Direct Hermitian ($m=10$) & \texttt{24840acb23bc} \\
+188 & $[[31,13,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Direct Hermitian ($m=9$) & \texttt{c7dd4a821fd0} \\
+189 & $[[35,11,10]]_{8}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Direct Symplectic ($r_S=24$) & \texttt{96e3593db60a} \\
+190 & $[[36,9,11]]_{8}$ & $10\text{--}14$ & $\mathbf{11}\text{--}14$ & Direct Symplectic ($r_S=27$) & \texttt{80cbd40f3fac} \\
+191 & $[[37,10,11]]_{8}$ & $10\text{--}14$ & $\mathbf{11}\text{--}14$ & Direct Symplectic ($r_S=27$) & \texttt{6cbeeb7ca1e9} \\
+192 & $[[39,13,11]]_{8}$ & $10\text{--}14$ & $\mathbf{11}\text{--}14$ & Direct Hermitian ($m=13$) & \texttt{f95d8ccf9e1e} \\
+193 & $[[44,22,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Direct Hermitian ($m=11$) & \texttt{cfe67bdf2e13} \\
+194 & $[[45,11,13]]_{8}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Direct Symplectic ($r_S=34$) & \texttt{ce69191db906} \\
+195 & $[[45,15,12]]_{8}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Direct Hermitian ($m=15$) & \texttt{d663230242bb} \\
+196 & $[[46,11,13]]_{8}$ & $12\text{--}18$ & $\mathbf{13}\text{--}18$ & Direct Symplectic ($r_S=35$) & \texttt{62f5ea8b5e37} \\
+197 & $[[46,16,12]]_{8}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Direct Hermitian ($m=15$) & \texttt{ff2d2e1b170d} \\
+198 & $[[47,17,12]]_{8}$ & $11\text{--}16$ & $\mathbf{12}\text{--}16$ & Direct Hermitian ($m=15$) & \texttt{e2298f35b7dd} \\
+199 & $[[47,18,11]]_{8}$ & $10\text{--}15$ & $\mathbf{11}\text{--}15$ & Direct Symplectic ($r_S=29$) & \texttt{2ed2c961bbdd} \\
+200 & $[[48,10,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{31bc4fe31e43} \\
+201 & $[[48,16,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Direct Hermitian ($m=16$) & \texttt{f37bb63ae752} \\
+202 & $[[48,22,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{c538dae740b2} \\
+203 & $[[48,24,9]]_{8}$ & $8\text{--}13$ & $\mathbf{9}\text{--}13$ & Direct Hermitian ($m=12$) & \texttt{dec1733d30e2} \\
+204 & $[[49,17,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Direct Hermitian ($m=16$) & \texttt{c3d23a521ac0} \\
+205 & $[[49,22,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Direct Symplectic ($r_S=27$) & \texttt{68346511cb83} \\
+206 & $[[51,21,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Direct Symplectic ($r_S=30$) & \texttt{f91463f57808} \\
+207 & $[[52,16,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{b4822b7bae3c} \\
+208 & $[[52,20,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{0626da05c7b1} \\
+209 & $[[52,21,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Direct Symplectic ($r_S=31$) & \texttt{4ccfacbcac31} \\
+210 & $[[52,22,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Direct Symplectic ($r_S=30$) & \texttt{1ec8d4de7519} \\
+211 & $[[53,22,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Direct Symplectic ($r_S=31$) & \texttt{0749cf5ae42b} \\
+212 & $[[54,16,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{aa1150767999} \\
+213 & $[[54,18,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{83c8cf17541c} \\
+214 & $[[54,22,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{300766502e7d} \\
+215 & $[[54,24,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Direct Symplectic ($r_S=30$) & \texttt{d4be7acdd26b} \\
+216 & $[[54,28,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{dd8a0114eb2c} \\
+217 & $[[55,25,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Direct Symplectic ($r_S=30$) & \texttt{c8a28301966a} \\
+218 & $[[55,28,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Direct Symplectic ($r_S=27$) & \texttt{7467ef00823c} \\
+219 & $[[55,33,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Direct Hermitian ($m=11$) & \texttt{1b0ef906b8f6} \\
+220 & $[[56,18,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{4e10df9edb1f} \\
+221 & $[[56,20,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{e91e51c9a235} \\
+222 & $[[56,24,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{5b416fb0e5c2} \\
+223 & $[[56,26,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{05134988981d} \\
+224 & $[[58,20,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{bc0f7a34fd27} \\
+225 & $[[58,22,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{c61969da0eac} \\
+226 & $[[58,26,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{35675304cc10} \\
+227 & $[[58,28,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{469c7cb99c88} \\
+228 & $[[58,32,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{a5c38e660f48} \\
+229 & $[[58,34,9]]_{8}$ & $8\text{--}13$ & $\mathbf{9}\text{--}13$ & Quasi-Unitary MP2 ($m=12$) & \texttt{e20290b3f7fb} \\
+230 & $[[60,22,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{1921d878271f} \\
+231 & $[[60,24,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{46885ea316a8} \\
+232 & $[[60,28,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{905bd5a414a9} \\
+233 & $[[60,30,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{f6a52c8b98fa} \\
+234 & $[[60,34,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{69f6cdd7500e} \\
+235 & $[[60,36,9]]_{8}$ & $8\text{--}13$ & $\mathbf{9}\text{--}13$ & Quasi-Unitary MP2 ($m=12$) & \texttt{9cba2228fa2c} \\
+236 & $[[62,24,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{f620bd05def9} \\
+237 & $[[62,26,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{45a780fb773c} \\
+238 & $[[62,30,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{79b259499615} \\
+239 & $[[62,32,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{4523e406e3ff} \\
+240 & $[[62,36,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{eb882de5a87f} \\
+241 & $[[64,20,16]]_{8}$ & $15\text{--}23$ & $\mathbf{16}\text{--}23$ & Quasi-Unitary MP2 ($m=22$) & \texttt{0b9190068aca} \\
+242 & $[[64,22,15]]_{8}$ & $14\text{--}22$ & $\mathbf{15}\text{--}22$ & Quasi-Unitary MP2 ($m=21$) & \texttt{07e8989d18c3} \\
+243 & $[[64,26,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{6cc1025dfb37} \\
+244 & $[[64,28,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{89510b4cfde7} \\
+245 & $[[64,32,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{88bba7b7b13e} \\
+246 & $[[64,34,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{84d91ac87547} \\
+247 & $[[66,28,14]]_{8}$ & $13\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{6a5ac9e09325} \\
+248 & $[[66,30,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{5e3792e67e27} \\
+249 & $[[66,34,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{88e5f89c433f} \\
+250 & $[[68,30,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{f2f5b7489d37} \\
+251 & $[[68,32,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{f36cbc426a1c} \\
+252 & $[[68,36,12]]_{8}$ & $11\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{6300e794684f} \\
+253 & $[[68,38,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{6af3d76da90a} \\
+254 & $[[68,42,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{322b530e21ac} \\
+255 & $[[70,32,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{e91a12f614cb} \\
+256 & $[[70,34,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{ff624629ae78} \\
+257 & $[[70,38,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{db7c9bb7e777} \\
+258 & $[[70,40,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{a74383fd48bf} \\
+259 & $[[70,44,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{e954a79eded6} \\
+260 & $[[72,28,16]]_{8}$ & $15\text{--}23$ & $\mathbf{16}\text{--}23$ & Quasi-Unitary MP2 ($m=22$) & \texttt{259fe38afae1} \\
+261 & $[[72,30,15]]_{8}$ & $14\text{--}22$ & $\mathbf{15}\text{--}22$ & Quasi-Unitary MP2 ($m=21$) & \texttt{d040d2b73e5b} \\
+262 & $[[72,34,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{659ade3f27cc} \\
+263 & $[[72,36,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{df928eedc77a} \\
+264 & $[[72,40,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{b4bcd9bdaa17} \\
+265 & $[[72,42,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{43535be45be7} \\
+266 & $[[72,46,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{4bfba6125e3d} \\
+267 & $[[72,52,8]]_{8}$ & $7\text{--}11$ & $\mathbf{8}\text{--}11$ & Quasi-Unitary MP2 ($m=10$) & \texttt{5a021d450a99} \\
+268 & $[[74,36,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{7ae8c8bf7a31} \\
+269 & $[[74,38,13]]_{8}$ & $12\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{7af7a45856e7} \\
+270 & $[[74,42,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{7ab7838bd558} \\
+271 & $[[74,44,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{d7310dc60efe} \\
+272 & $[[76,32,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & Quasi-Unitary MP2 ($m=22$) & \texttt{23c3ba18b107} \\
+273 & $[[76,34,15]]_{8}$ & $14\text{--}22$ & $\mathbf{15}\text{--}22$ & Quasi-Unitary MP2 ($m=21$) & \texttt{58fc01cbb57b} \\
+274 & $[[76,38,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{d5bca6c99eda} \\
+275 & $[[76,40,13]]_{8}$ & $11\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{0990743ac7f9} \\
+276 & $[[76,44,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{7ac10f6b962f} \\
+277 & $[[76,46,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{18cfdfbd2393} \\
+278 & $[[76,50,10]]_{8}$ & $9\text{--}14$ & $\mathbf{10}\text{--}14$ & Quasi-Unitary MP2 ($m=13$) & \texttt{1c00223576c0} \\
+279 & $[[76,52,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{ebc11e8c4e92} \\
+280 & $[[76,56,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{8fc4c95799d9} \\
+281 & $[[76,58,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{a916a4c0d1b7} \\
+282 & $[[78,40,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{1261c9683e79} \\
+283 & $[[78,42,13]]_{8}$ & $11\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{79aae3fff4c7} \\
+284 & $[[78,46,12]]_{8}$ & $10\text{--}17$ & $\mathbf{12}\text{--}17$ & Quasi-Unitary MP2 ($m=16$) & \texttt{e397be125bc5} \\
+285 & $[[78,48,11]]_{8}$ & $10\text{--}16$ & $\mathbf{11}\text{--}16$ & Quasi-Unitary MP2 ($m=15$) & \texttt{753de422117c} \\
+286 & $[[78,52,10]]_{8}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{dcac4bf05172} \\
+287 & $[[78,54,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{decd93c6ba4c} \\
+288 & $[[78,58,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{0608f93b7039} \\
+289 & $[[80,36,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & Quasi-Unitary MP2 ($m=22$) & \texttt{5fb2236aa682} \\
+290 & $[[80,38,15]]_{8}$ & $14\text{--}22$ & $\mathbf{15}\text{--}22$ & Quasi-Unitary MP2 ($m=21$) & \texttt{b4a8174efd5a} \\
+291 & $[[80,42,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{5a6e5db55b64} \\
+292 & $[[80,44,13]]_{8}$ & $11\text{--}19$ & $\mathbf{13}\text{--}19$ & Quasi-Unitary MP2 ($m=18$) & \texttt{aad0de188a48} \\
+293 & $[[80,48,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{235a88547e90} \\
+294 & $[[80,50,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{4f5086b182bf} \\
+295 & $[[80,54,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{b82844673190} \\
+296 & $[[80,56,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{7ab13c8b8d09} \\
+297 & $[[80,60,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{80873ccd9530} \\
+298 & $[[80,62,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{75eddbafe804} \\
+299 & $[[82,38,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & Quasi-Unitary MP2 ($m=22$) & \texttt{69517da74505} \\
+300 & $[[82,40,15]]_{8}$ & $13\text{--}22$ & $\mathbf{15}\text{--}22$ & Quasi-Unitary MP2 ($m=21$) & \texttt{aba7b4276a5e} \\
+301 & $[[82,44,14]]_{8}$ & $12\text{--}20$ & $\mathbf{14}\text{--}20$ & Quasi-Unitary MP2 ($m=19$) & \texttt{76245d81b497} \\
+302 & $[[82,46,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{9df51b4e9a7b} \\
+303 & $[[82,50,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{af1e265aa4c3} \\
+304 & $[[82,52,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{a083ab006f77} \\
+305 & $[[82,56,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{ad8b170b2ff7} \\
+306 & $[[82,58,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{1d02e80e6404} \\
+307 & $[[82,62,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{7e8d0361d8e8} \\
+308 & $[[82,64,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{aedeccd7d4f4} \\
+309 & $[[84,40,16]]_{8}$ & $14\text{--}23$ & $\mathbf{16}\text{--}23$ & Quasi-Unitary MP2 ($m=22$) & \texttt{d0b2f07828e9} \\
+310 & $[[84,42,15]]_{8}$ & $13\text{--}22$ & $\mathbf{15}\text{--}22$ & Quasi-Unitary MP2 ($m=21$) & \texttt{a6433935aff6} \\
+311 & $[[84,46,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{3b32e207f2a0} \\
+312 & $[[84,48,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{ba8dd22ca0e6} \\
+313 & $[[84,52,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{61bf0e3be5ce} \\
+314 & $[[84,54,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{4446e7ae65d4} \\
+315 & $[[84,58,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{468fe0c6d4d6} \\
+316 & $[[84,60,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{2af076461a2b} \\
+317 & $[[84,64,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{d7c590e3fd25} \\
+318 & $[[84,66,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{aa434138f301} \\
+319 & $[[86,42,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{9e89413a11c4} \\
+320 & $[[86,44,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{b816102d2534} \\
+321 & $[[86,48,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{dd29e6a25eec} \\
+322 & $[[86,50,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{e9f0060029a8} \\
+323 & $[[86,54,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{126f69732943} \\
+324 & $[[86,56,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{ec4dfc510c3c} \\
+325 & $[[86,60,10]]_{8}$ & $9\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{790bf2dc36ba} \\
+326 & $[[86,62,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{d726c7ba8438} \\
+327 & $[[86,66,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{9550d7cb9062} \\
+328 & $[[88,44,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{1674aa3559b9} \\
+329 & $[[88,46,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{ad086399c213} \\
+330 & $[[88,50,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{e470e1be1736} \\
+331 & $[[88,52,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{681b81df03b2} \\
+332 & $[[88,56,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{19c1d1439800} \\
+333 & $[[88,58,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{c28382812253} \\
+334 & $[[88,62,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{eff2e9ee252c} \\
+335 & $[[88,64,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{c70bff839870} \\
+336 & $[[88,68,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{9281dbac167f} \\
+337 & $[[88,70,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{9e2a4673b601} \\
+338 & $[[90,46,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{dbb992e5af59} \\
+339 & $[[90,48,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{0cc2eff6d486} \\
+340 & $[[90,52,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{61bb6de75082} \\
+341 & $[[90,54,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{426bc368046b} \\
+342 & $[[90,58,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{86c290bd794a} \\
+343 & $[[90,60,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{db728861c6b4} \\
+344 & $[[90,64,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{cf0c434e7e66} \\
+345 & $[[90,66,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{51efee625e79} \\
+346 & $[[90,70,8]]_{8}$ & $6\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{e59709467b6d} \\
+347 & $[[90,72,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{8f4d91703795} \\
+348 & $[[92,48,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{fb6b272e96ca} \\
+349 & $[[92,50,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{54abce09ccbb} \\
+350 & $[[92,54,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{6e32ed0e3db7} \\
+351 & $[[92,56,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{79f89ef08239} \\
+352 & $[[92,60,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{d2e69a2c7542} \\
+353 & $[[92,62,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{8e1f807e2e35} \\
+354 & $[[92,66,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{a524a8509ea4} \\
+355 & $[[92,68,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{a6a671233efb} \\
+356 & $[[92,72,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{afd96437b528} \\
+357 & $[[92,74,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{5401c3a04c31} \\
+358 & $[[94,50,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{2ef593354974} \\
+359 & $[[94,52,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{58b0fe3d1b41} \\
+360 & $[[94,56,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{683176597e6f} \\
+361 & $[[94,58,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{1664bd3d4764} \\
+362 & $[[94,62,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{c8e01d6df180} \\
+363 & $[[94,64,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{28bda194b8ac} \\
+364 & $[[94,68,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{48896e5a0ff8} \\
+365 & $[[94,70,9]]_{8}$ & $8\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{89b93469360b} \\
+366 & $[[94,74,8]]_{8}$ & $6\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{87e39df86842} \\
+367 & $[[94,76,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{f7a82401efca} \\
+368 & $[[96,52,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{80674a0328f1} \\
+369 & $[[96,54,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{4f593341fa3f} \\
+370 & $[[96,58,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{182043de0619} \\
+371 & $[[96,60,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{ac8192d5c05e} \\
+372 & $[[96,64,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{83429a868a94} \\
+373 & $[[96,66,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{96d6fabca30e} \\
+374 & $[[96,70,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{526ee2d151a3} \\
+375 & $[[96,72,9]]_{8}$ & $7\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{612f3c464111} \\
+376 & $[[96,76,8]]_{8}$ & $7\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{3a96c0895ec8} \\
+377 & $[[96,78,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{7180f12b0eb3} \\
+378 & $[[98,54,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{2c7d1f08af97} \\
+379 & $[[98,56,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{42f7cbe9e77b} \\
+380 & $[[98,60,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{63a47325264c} \\
+381 & $[[98,62,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{e200d3b06783} \\
+382 & $[[98,66,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{67eb953b6c20} \\
+383 & $[[98,68,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{be3a8d1e0a79} \\
+384 & $[[98,72,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{dd76874b035d} \\
+385 & $[[98,74,9]]_{8}$ & $7\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{eaa8aff6e848} \\
+386 & $[[98,78,8]]_{8}$ & $6\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{b0d0aab09fc9} \\
+387 & $[[98,80,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{f84ab93ebbe2} \\
+388 & $[[100,56,16]]_{8}$ & $14\text{--}22$ & $\mathbf{16}\text{--}22$ & Quasi-Unitary MP2 ($m=22$) & \texttt{43e79d84f1ff} \\
+389 & $[[100,58,15]]_{8}$ & $13\text{--}21$ & $\mathbf{15}\text{--}21$ & Quasi-Unitary MP2 ($m=21$) & \texttt{d6cc91c8cd80} \\
+390 & $[[100,62,14]]_{8}$ & $12\text{--}19$ & $\mathbf{14}\text{--}19$ & Quasi-Unitary MP2 ($m=19$) & \texttt{eefa4b8dcfd7} \\
+391 & $[[100,64,13]]_{8}$ & $11\text{--}18$ & $\mathbf{13}\text{--}18$ & Quasi-Unitary MP2 ($m=18$) & \texttt{b06ffb123273} \\
+392 & $[[100,68,12]]_{8}$ & $10\text{--}16$ & $\mathbf{12}\text{--}16$ & Quasi-Unitary MP2 ($m=16$) & \texttt{421497c6cc21} \\
+393 & $[[100,70,11]]_{8}$ & $9\text{--}15$ & $\mathbf{11}\text{--}15$ & Quasi-Unitary MP2 ($m=15$) & \texttt{9447573ef759} \\
+394 & $[[100,74,10]]_{8}$ & $8\text{--}13$ & $\mathbf{10}\text{--}13$ & Quasi-Unitary MP2 ($m=13$) & \texttt{5817574fcf78} \\
+395 & $[[100,76,9]]_{8}$ & $7\text{--}12$ & $\mathbf{9}\text{--}12$ & Quasi-Unitary MP2 ($m=12$) & \texttt{000f1861f32a} \\
+396 & $[[100,80,8]]_{8}$ & $6\text{--}10$ & $\mathbf{8}\text{--}10$ & Quasi-Unitary MP2 ($m=10$) & \texttt{62169788fa78} \\
+397 & $[[100,82,7]]_{8}$ & $6\text{--}9$ & $\mathbf{7}\text{--}9$ & Quasi-Unitary MP2 ($m=9$) & \texttt{e43eff4e44ec} \\
+\end{longtable}
+}
 
 \end{document}

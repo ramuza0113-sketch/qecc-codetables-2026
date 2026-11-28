@@ -1,9 +1,9 @@
 {
-  "title": "Twenty-Nine Improved Bounds on Quantum Error-Correcting Codes via Quasi-Twisted and Bordered Hermitian Constructions",
-  "version": "1.1.0",
+  "title": "Sixteen Hundred Fifty-Four Improved Minimum-Distance Bounds and Eighteen Exact-Optimal Closures for Quantum Stabilizer Codes over GF(q) (q in {2, 3, 4, 5, 7, 8})",
+  "version": "1.2.0",
   "upload_type": "publication",
   "publication_type": "preprint",
-  "description": "Explicit Hermitian self-orthogonal linear codes over GF(q^2) constructing eighteen pure quantum stabilizer codes ([[33, 11, 7]]_2, [[34, 12, 7]]_2, [[36, 26, 4]]_2, [[49, 33, 5]]_2, [[20, 10, 5]]_3, [[18, 6, 6]]_4, [[19, 7, 6]]_4, [[20, 10, 5]]_4, [[24, 8, 7]]_4, [[25, 9, 7]]_4, [[25, 15, 5]]_4, [[26, 16, 5]]_4, [[19, 7, 6]]_5, [[24, 12, 6]]_5, [[32, 16, 7]]_5, [[33, 17, 7]]_5, [[21, 7, 7]]_7, and [[22, 8, 7]]_7) that strictly improve 29 minimum-distance lower bounds (closing 5 entries to exact optimality) in Markus Grassl's CodeTables.de over alphabets q in {2, 3, 4, 5, 7}. Includes full manuscript (PDF/LaTeX), unified Magma verification script (verify_all_18_codes.m), JSON certificates with SHA-256 digests, RTX 3090 CUDA / Rust search solvers, and zero-shared-code clean-room verifiers.",
+  "description": "Explicit pure q-ary quantum error-correcting stabilizer codes (397 parent certificates across q in {2, 3, 4, 5, 7, 8}, block lengths 11 <= n <= 100, and pure minimum distances 4 <= d <= 16) constructed via (1) comb-free multi-eigenmode Vandermonde bordered constacyclic Hermitian codes with spectral discrete Fourier diagonalization, (2) equivariant GF(q)-linear symplectic stabilizer codes for odd and even stabilizer ranks r_S = n - k, (3) symmetry-free navigation of the Hermitian isotropic Grassmannian via Dieudonne-Witt rank-1 unitary Householder reflections, and (4) Frobenius-conjugated 2-block and 3-block non-singular-by-columns (NSC) quasi-unitary matrix-product codes over projective generalized Reed-Solomon components. Strictly improves 1,450 minimum-distance lower bounds in Markus Grassl's CodeTables.de as pure stabilizer codes (closing 16 entries to exact optimality) under strictly pure secondary propagation (PureSubcode, Puncture, Shorten), 1,575 entries under single-operator propagation, and 1,654 entries (closing 18 previously open entries to d_low = d_up, including non-GRS Quantum MDS codes [[11, 1, 6]]_5 and self-dual [[12, 0, 7]]_5) when appending terminal weight-1 stabilizer extension (Extend). Includes full v1.2.0 manuscript (PDF/LaTeX), all 397 JSON certificates with SHA-256 digests, machine-readable impact report, four zero-shared-code multi-threaded Rust clean-room verifiers, Python audit suite, and native Magma verification scripts.",
   "creators": [
     {
       "name": "Hashimoto, Katsutoshi",
@@ -15,9 +15,13 @@
   "keywords": [
     "quantum error-correcting codes",
     "stabilizer codes",
+    "quantum MDS codes",
     "Hermitian self-orthogonal codes",
+    "symplectic codes",
+    "isotropic Grassmannian",
+    "Householder reflections",
+    "matrix-product codes",
     "quasi-twisted codes",
-    "constacyclic codes",
     "CodeTables.de",
     "minimum distance bounds",
     "81P70",

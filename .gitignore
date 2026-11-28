@@ -1,6 +1,8 @@
 __pycache__/
+*.pyc
+verifiers/bin/
 *.exe
 *.pdb
-*.aux
-*.log
-*.out
+paper/*.aux
+paper/*.log
+paper/*.out
